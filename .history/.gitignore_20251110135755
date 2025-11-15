@@ -7,7 +7,7 @@ yarn-debug.log*
 yarn-error.log*
 
 # Environment files
-config.env
+.env
 
 # OS / Editor files
 .DS_Store
