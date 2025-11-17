@@ -34,16 +34,5 @@ const userSchema= new mongoose.Schema(
          },
          message:"passwords do not match"
        }
-    },
-     role:{
-       type:String,
-       enum:['user','admin','rider'],
-       default: 'user'
-     },
-     passwordResetToken: String,
-     passwordResetExpires: Date
+    }
 })
-
-const User= new mongoose.model('User', userSchema)
-
-module.exports=User

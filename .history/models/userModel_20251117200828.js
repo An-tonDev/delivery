@@ -39,9 +39,7 @@ const userSchema= new mongoose.Schema(
        type:String,
        enum:['user','admin','rider'],
        default: 'user'
-     },
-     passwordResetToken: String,
-     passwordResetExpires: Date
+     }
 })
 
 const User= new mongoose.model('User', userSchema)
