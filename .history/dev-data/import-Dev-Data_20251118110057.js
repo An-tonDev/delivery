@@ -4,7 +4,7 @@ const mongoose = require('mongoose');
 const Order = require('../models/orderModel');
 const User = require('../models/userModel');
 
-dotenv.config({ path: `${__dirname}/../.env` });
+dotenv.config({ path: './config.env' });
 
 const DB = process.env.DATABASE;
 
