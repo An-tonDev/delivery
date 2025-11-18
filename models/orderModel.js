@@ -24,8 +24,11 @@ const orderSchema= new mongoose.Schema(
         required:true,
         maxlength:[4, "a pin should not be more than 4 digits"]
     }
+},{
+    timestamps:true
 }
-)
- const Order= new mongoose.model('Order',orderSchema)
+);
+
+ const Order = mongoose.model('Order', orderSchema)
 
  module.exports=Order

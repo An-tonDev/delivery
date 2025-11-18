@@ -12,3 +12,5 @@ yarn-error.log*
 # OS / Editor files
 .DS_Store
 .vscode/
+
+.history/
