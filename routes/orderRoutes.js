@@ -13,3 +13,5 @@ router
 .get(orderController.getOrder)
 .delete(orderController.deleteOrder)
 .patch(orderController.updateOrder)
+
+module.exports=router

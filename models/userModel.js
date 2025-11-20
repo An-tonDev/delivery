@@ -1,9 +1,12 @@
 const mongoose= require('mongoose')
+const bcrypt= require('bcrypt')
+const crypto= require('crypto')
 
 const userSchema= new mongoose.Schema(
     {
     username:{
         type:String,
+        unique:true,
          required: true
     },
     email:{
@@ -43,6 +46,28 @@ const userSchema= new mongoose.Schema(
      passwordResetToken: String,
      passwordResetExpires: Date
 })
+
+
+userSchema.pre('save',async function(next){
+  if(!this.isModified('password')) return next
+  this.password= bcrypt.hash(this.password,12)
+})
+
+userSchema.methods.correctPassword= async function(canditatePassword,password){
+  return await bcrypt.compare(canditatePassword,password)
+}
+
+userSchema.methods.sendResetToken= async function(){
+  const resetToken= crypto.randomBytes(32).toString('hex')
+
+  this.passwordResetToken= crypto.createHash('sha256')
+  .update(resetToken)
+  .digest('hex')
+
+  this.passwordResetExpires= Date.now()+10*60*1000
+
+  return resetToken
+}
 
 const User=  mongoose.model('User', userSchema)
 

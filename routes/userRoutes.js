@@ -13,3 +13,5 @@ router
 .get(userController.getUser)
 .delete(userController.deleteUser)
 .patch(userController.updateuser)
+
+module.exports=router
