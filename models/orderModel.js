@@ -23,6 +23,10 @@ const orderSchema= new mongoose.Schema(
         type: Number,
         required:true,
         maxlength:[4, "a pin should not be more than 4 digits"]
+    },
+    rider:{
+        type: mongoose.Schema.ObjectId,
+        ref:'User'
     }
 },{
     timestamps:true

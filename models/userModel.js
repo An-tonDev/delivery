@@ -1,6 +1,7 @@
 const mongoose= require('mongoose')
 const bcrypt= require('bcrypt')
-const crypto= require('crypto')
+const crypto= require('crypto');
+const { type } = require('os');
 
 const userSchema= new mongoose.Schema(
     {
@@ -40,12 +41,30 @@ const userSchema= new mongoose.Schema(
     },
      role:{
        type:String,
-       enum:['user','admin','rider'],
-       default: 'user'
+       enum:["user","admin","rider"],
+       default: "user"
+     },
+     location:{
+       type:{
+        type:String,
+        enum:["point"],
+        default:"Point"
+       },
+       coordinates:{
+        type:Number,
+        required:true
+       },
+       address:String,
+       updatedAt:{
+        type:Date,
+        default: Date.now()
+       }
      },
      passwordResetToken: String,
      passwordResetExpires: Date
 })
+
+userSchema.index({location:'2dsphere'})
 
 
 userSchema.pre('save',async function(next){
