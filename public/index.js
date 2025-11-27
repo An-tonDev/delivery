@@ -1,4 +1,3 @@
-const { SWRConfig } = require("swr");
 
 //lagos
 var map=L.map('map').setView([6.5244,3.3792],13)
