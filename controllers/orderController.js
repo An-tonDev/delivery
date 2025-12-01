@@ -1,9 +1,8 @@
 const Order=require('../models/orderModel')
+const User=require('../models/userModel')
 const catchAsync=require('../utils/catchAsync')
-const throwNotFound=require('../controllers/errorController')
+const {AppError,NotFoundError}=require('../utils/appError')
 
-//example declaration sake
-const socket=require('socket')
 
 
 exports.getOrders=catchAsync (async(req,res,next)=>{
@@ -22,7 +21,7 @@ exports.getOrder=catchAsync (async(req,res,next)=>{
     const order= await Order.findById(req.params.id)
 
      if(!order){
-        throwNotFound("order",req.params.id)
+        return next(new NotFoundError('order'))
      }
         res.status(200).json({
             status:"success",
@@ -34,7 +33,7 @@ exports.updateOrder=catchAsync (async(req,res,next)=>{
         
     const order= await Order.findByIdAndUpdate(req.params.id,req.body)
      if(!order){
-        throwNotFound('order',req.params.id)
+        return next(new NotFoundError('order'))
      }
         res.status(200).json({
             status:"success",
@@ -47,7 +46,7 @@ exports.deleteOrder=catchAsync (async(req,res,next)=>{
     const order= await Order.findByIdAndDelete(req.params.id)
 
     if(!order){
-        throwNotFound('order',req.params.id)
+        return next(new NotFoundError('order'))
      }
      
         res.status(204).json({
@@ -65,7 +64,70 @@ exports.createOrder=catchAsync (async(req,res,next)=>{
         })
 })
 
-//examples for learning about socket.io
+exports.findNearestRider=catchAsync(async(req,res,next)=>{
+
+    const {orderId,lat,lng}=req.params
+
+    const order= await Order.findById(orderId)
+
+       if(!order){
+        return next(new NotFoundError('order'))
+       }
+        
+       const lngNum= parseFloat(lng)
+        const latNum=parseFloat(lat)
+
+       if(isNaN(lngNum)||isNaN(latNum)){
+            return next(new AppError('this is not a valid coordinate number',400))
+        }
+        
+    const customerLocation={
+        type:'point',
+        coordinates:[lngNum,latNum]
+    }
+
+       const nearByRiders= await User.find({
+        role:"rider",
+        isAvailable:true,
+        location:{
+        $near:{
+           $geometry:customerLocation,
+           $maxDistance:5000
+        }
+       }}).sort({rating:-1})
+       .limit(3)
+
+       if(!nearByRiders){
+         return next(new NotFoundError("riders close to your location are not available",404))
+       }
+         
+    const rider=nearByRiders[0]
+
+     order.rider=rider._id
+     order.status='order_assigned'
+
+     await order.save()
+
+     res.status(200).json({
+        status:"success",
+        message:`Rider ${rider.username} has been assigned to deliver your order to the destination`,
+        data:{
+            order,
+            rider
+        }
+     })
+
+})
+
+
+
+
+
+
+
+
+
+/* //examples for learning about socket.io
 
 socket.emit('rider_moved',{position:[6.5280,3.3794]})
 
@@ -121,4 +183,4 @@ socket.on('rider_moved', (data) => {
     
     // Update ETA
     updateETA(data.position);
-});
+}); */

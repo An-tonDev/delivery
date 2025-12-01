@@ -6,6 +6,11 @@ const orderSchema= new mongoose.Schema(
       type: String,
       required:[true,"order name is required"]
     },
+    status:{
+        type:String,
+        required:true,
+        default:"placed_order"
+    },
     sender:{
         type: mongoose.Schema.ObjectId,
         ref:'User',

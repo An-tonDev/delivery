@@ -44,12 +44,24 @@ const userSchema= new mongoose.Schema(
        enum:["user","admin","rider"],
        default: "user"
      },
+     isAvailable:{
+      type:Boolean,
+      required:function(){return this.role === 'rider'},
+     },
+     rating:{
+        type: Number,
+        required: function(){return this.role==='rider'},
+        min:[0,'rating cannot be less than 0'],
+        max:[5,'rating cannot be more than 5'],
+        default:0
+     },
      location:{
        type:{
         type:String,
-        enum:["point"],
+        enum:["Point"],
         default:"Point"
        },
+       required: function(){return this.role ==='rider'},
        coordinates:{
         type:Number,
         required:true
@@ -64,7 +76,8 @@ const userSchema= new mongoose.Schema(
      passwordResetExpires: Date
 })
 
-userSchema.index({location:'2dsphere'})
+userSchema.index({location:'2dsphere'},
+  {partialFilterExpression:{role:'rider'}})
 
 
 userSchema.pre('save',async function(next){

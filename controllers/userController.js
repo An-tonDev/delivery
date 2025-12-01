@@ -1,11 +1,15 @@
 const User=require('../models/userModel')
 const catchAsync=require('../utils/catchAsync')
-const throwNotFound=require('../controllers/errorController')
+const {AppError,NotFoundError}=require('../utils/appError')
 
 
 exports.getUsers=catchAsync (async(req,res,next)=>{
         
     const users= await User.find()
+
+    if(!users){
+        return next(new NotFoundError(`user database is empty`,404))
+    }
      
         res.status(200).json({
             status:"success",
@@ -19,7 +23,7 @@ exports.getUser=catchAsync (async(req,res,next)=>{
     const user= await User.findById(req.params.id)
 
      if(!user){
-        throwNotFound("user",req.params.id)
+    return next(new NotFoundError(`user ${req.params.id}`,404))
      }
         res.status(200).json({
             status:"success",
@@ -31,7 +35,7 @@ exports.updateuser=catchAsync (async(req,res,next)=>{
         
     const user= await user.findByIdAndUpdate(req.params.id,req.body)
      if(!user){
-        throwNotFound('user',req.params.id)
+      return next(new NotFoundError(`user ${req.params.id}`,404))
      }
         res.status(200).json({
             status:"success",
@@ -44,7 +48,7 @@ exports.deleteUser=catchAsync (async(req,res,next)=>{
     const user= await User.findByIdAndDelete(req.params.id)
 
     if(!user){
-        throwNotFound('user',req.params.id)
+        return next(new NotFoundError(`user ${req.params.id}`,404))
      }
      
         res.status(204).json({

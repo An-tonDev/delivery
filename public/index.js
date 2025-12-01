@@ -1,5 +1,10 @@
 
-//lagos
+
+
+
+
+
+/* //lagos
 var map=L.map('map').setView([6.5244,3.3792],13)
 L.tileLayer('https://{s}tile.openstreetmap.org/{z}/{x}/{y}.png', {
     maxZoom: 19,
@@ -7,7 +12,7 @@ L.tileLayer('https://{s}tile.openstreetmap.org/{z}/{x}/{y}.png', {
 }).addTo(map);
 
 
-//take the existing pin and move it to this location
+//take an existing pin and move it to this location
 marker.setLatLng([6.5280,3.3800])
 
 //center map on a new location
@@ -180,4 +185,4 @@ function realTimeMonitor(){
 
 document.getElementById('location').addEventListener('click',getUserLocation())
 document.getElementById('trackLocation').addEventListener('click',realTimeMonitor())
-document.getElementById('stop').addEventListener('click',stopTracking())
+document.getElementById('stop').addEventListener('click',stopTracking()) */
