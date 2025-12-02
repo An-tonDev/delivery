@@ -1,7 +1,7 @@
 const jwt=require('jsonwebtoken')
 const catchAsync= require('../utils/catchAsync')
 const User=require('../models/userModel')
-const throwAppError=require('./errorController')
+const {AppError, NotFoundError}=require('../utils/appError')
 const crypto=require('crypto')
 const Email=require('../utils/catchAsync')
 
@@ -34,7 +34,7 @@ exports.signup=catchAsync(async(req,res,next)=>{
    const user= await User.create({ ...req.body})
 
    if(!user){
-     throwAppError('profile was not created',400)
+     return next(new AppError('profile was not created',400))
    }
    createSendToken(user,201,res)
 
@@ -44,12 +44,12 @@ exports.login= catchAsync( async(req,res,next)=>{
 
     const {username,password}=req.body
     if(!username || !password){
-        throwAppError("please provide your username or password",400)
+       return next(new AppError("please provide your username or password",400))
     }
 
     const user= await User.findOne(username).select('+password')
     if(!user || user.correctPassword(password,user.password)){
-        throwAppError("incorrect email or password",401)
+       return next(new AppError("incorrect email or password",401))
     }
 
     createSendToken(user,200,res)
@@ -79,7 +79,7 @@ exports.protect=catchAsync( async (req,res,next)=>{
  }
 
  if(!token){
-    throwAppError('please login to gain access',400)
+    return next(new AppError('please login to gain access',400))
  }
 
  const decoded= await promisify(jwt.verify(token,process.env.JWT_SECRET))
@@ -87,7 +87,7 @@ exports.protect=catchAsync( async (req,res,next)=>{
 const currentUser= await User.findById(decoded.id)
 
 if(!currentUser){
-     throwAppError('user belonging to this token does not exist',400)
+    return next(new AppError('user belonging to this token does not exist',400))
 }
 
  req.user=currentUser
@@ -99,7 +99,7 @@ if(!currentUser){
 exports.restrict=(...roles)=>{
     return(req,res,next)=>{
     if(!roles.includes[req.user.role]){
-        throwAppError("you do not have permission to access this route",400)
+      return next(new AppError("you do not have permission to access this route",400))
     }
     next()
 }    
@@ -116,7 +116,7 @@ exports.resetPassword= catchAsync(async(req,res)=>{
     })
 
     if(!user){
-        throwAppError("token is invalid or expired")
+       return next(new AppError("token is invalid or expired"))
     }
       
     req.body.password=user.password
@@ -131,7 +131,7 @@ exports.resetPassword= catchAsync(async(req,res)=>{
 exports.forgotPassword=catchAsync( async (req,res,next)=>{
     const user= await User.findOne(req.body.email)
     if(!user){
-        throwAppError("no user with this email exists",400)
+       return next(new NotFoundError("user with this email "))
     }
 
     const resetToken= user.sendResetToken()
@@ -146,7 +146,7 @@ exports.forgotPassword=catchAsync( async (req,res,next)=>{
            user.passwordResetToken=undefined
            await user.save({validateBeforeSave:false})
 
-         return next (throwAppError('email could not be sent',500))
+         return next (new AppError('email could not be sent',500))
        }
 })
 
@@ -157,14 +157,14 @@ exports.updatePassword= catchAsync(async(req,res,next)=>{
     const user= await User.findById(req.user.id).select('+password')
     
     if(!(await user.correctPassword(passwordCurrent,user.password))){
-        throwAppError('cuurent password is not correct',400)
+       return next(new AppError('cuurent password is not correct',400))
     }
      if(!newPassword && newPassword.length<5){
-        throwAppError('password must be more than 5 characters',400)
+       return next(new AppError('password must be more than 5 characters',400))
      }
 
      if(passwordCurrent===newPassword){
-        throwAppError('new password should not be the same as current password',400)
+       return next(new AppError('new password should not be the same as current password',400))
      }
 
      user.password=newPassword
