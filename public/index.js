@@ -1,4 +1,154 @@
 
+let map;
+try{
+ map=L.map('map').setView([6.626498,3.356744],13)
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    maxZoom: 19,
+    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+}).addTo(map);
+
+}
+catch(error){
+
+    console.error('there is an error initalizing map',error)
+    showMessage("error cannot initialize map")
+}
+
+function showMessage(message){
+
+     const statusDiv=document.getElementById('locationStatus')
+     statusDiv.innerHTML=message
+     statusDiv.style.color= message.startsWith('error') ? 'red' :'grey'
+}
+
+function getUserCurrentLocation(){
+    if(!navigator.geolocation){
+      showMessage('error browser does not support location')
+      return
+    }
+
+    if(!map){
+        showMessage('error map was not initialized')
+        return
+    }
+
+    navigator.geolocation.getCurrentPosition(
+        (position)=>{
+            const cusCoordinates={
+                lat:position.coords.latitude,
+                lng:position.coords.longitude,
+                accuracy: position.coords.accuracy
+            }
+            console.log('coordinates:',cusCoordinates)
+            map.eachLayer((layer)=>{
+                if(layer instanceof L.Marker){
+                    map.removeLayer(layer)
+                }
+            })
+             const customerLocation=[cusCoordinates.lat,cusCoordinates.lng]
+
+           const customerMarker=L.marker(customerLocation)
+           .addTo(map).
+           bindPopup('this is the customer location')
+           .openPopup()
+
+           map.setView(customerLocation, 15);
+            
+        }, handleError,{
+            enableHighAccuracy:true,
+            timeout:100000,
+            maximumAge:7000
+        }
+    )
+    
+}
+
+function handleError(error){
+    switch(error.code){
+        case error.PERMISSION_DENIED: showMessage("error access to location not granted")
+        break;
+        case error.POSITION_UNAVAILABLE: showMessage("error location is not available")
+        break;
+        case error.TIMEOUT: showMessage("error request took too long")
+        break;
+         default:
+            showMessage("error an unexpected error occured")
+    }
+}
+
+function watchPosition(){
+    let watchId;
+
+    navigator.geolocation.watchPosition((position)=>{
+            updateRiderPosition(position.coords)
+    },handleError,{
+        enableHighAccuracy:true,
+        timeout:10000,
+        maximumAge:2000
+    })
+
+    const distance=calRemainDistance(riderLocation,destination)
+}
+
+function updateRiderPosition(coords){
+    riderLocation[0]= coords.latitude,
+    riderLocation[1]=coords.longitude
+}
+
+function stopTracking(){
+    if(watchId){
+        navigator.geolocation.clearWatch(watchId)
+    }
+    showMessage("no longer tracking user")
+}
+
+function calRemainDistance(riderLocation,destination){
+   const  rlat=riderLocation[0]-destination[0]
+   const   rlang=riderLocation[1]-destination[1]
+
+   return Math.sqrt((rlang*rlang)+(rlat*rlat))
+
+}
+
+
+let customerLocation=[];
+const riderLocation=[6.6578,3.3567]
+
+const riderMarker=L.marker(riderLocation).addTo(map).bindPopup('this is the rider')
+
+const destination=[6.9546,3.7543]
+
+const destinationMarker=L.marker(destination).addTo(map).bindPopup('destination')
+
+const route=L.polyline([
+    customerLocation,
+    destination
+],{color:'blue'}
+).addTo(map)
+
+
+
+
+
+document.getElementById('location').addEventListener('click',getUserCurrentLocation)
+document.getElementById('trackLocation').addEventListener('click',watchPosition)
+document.getElementById('stop').addEventListener('click', stopTracking)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -77,7 +227,7 @@ function calRemainDistance(lat1,lang1,lat2,lang2){
     const rLat= lat2-lat1
     const rlang=lang2-lang1
 
-    return Math.sqrt((rlang*rlang)+(rLat-rLat))
+    return Math.sqrt((rlang*rlang)+(rLat*rLat))
 
 }
 
