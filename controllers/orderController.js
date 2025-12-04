@@ -2,17 +2,24 @@ const Order=require('../models/orderModel')
 const User=require('../models/userModel')
 const catchAsync=require('../utils/catchAsync')
 const {AppError,NotFoundError}=require('../utils/appError')
+const ApiFeatures=require('../utils/apiFeatures')
 
 
 
 exports.getOrders=catchAsync (async(req,res,next)=>{
+
+    const features=new ApiFeatures(Order.find(),req.query)
+    .filter()
+    .sort()
+    .limitFields()
+    .paginate()
+    const doc= await features.query
         
-    const orders= await Order.find()
      
         res.status(200).json({
             status:"success",
-            results: orders.length,
-            data:{orders}
+            results: doc.length,
+            data:{doc}
         })
 })
 

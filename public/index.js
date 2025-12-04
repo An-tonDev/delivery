@@ -1,5 +1,13 @@
 
 let map;
+let watchId=null;
+let customerLocation=null;
+let riderLocation=null;
+let destination=null;
+let customerMarker=null
+let destinationMarker=null
+let riderMarker=null
+
 try{
  map=L.map('map').setView([6.626498,3.356744],13)
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -45,9 +53,9 @@ function getUserCurrentLocation(){
                     map.removeLayer(layer)
                 }
             })
-             const customerLocation=[cusCoordinates.lat,cusCoordinates.lng]
+            customerLocation=[cusCoordinates.lat,cusCoordinates.lng]
 
-           const customerMarker=L.marker(customerLocation)
+          customerMarker=L.marker(customerLocation)
            .addTo(map).
            bindPopup('this is the customer location')
            .openPopup()
@@ -77,22 +85,34 @@ function handleError(error){
 }
 
 function watchPosition(){
-    let watchId;
-
-    navigator.geolocation.watchPosition((position)=>{
+     if(watchId){
+        navigator.geolocation.clearWatch(watchId)
+    }
+    watchId= navigator.geolocation.watchPosition((position)=>{
             updateRiderPosition(position.coords)
+            if(destination){
+                const dist=calculateRealDistance(riderLocation[0],riderLocation[1],
+                    destination[0],destination[1]
+                )
+                showMessage(`${dist}km away from destination`)
+            }
     },handleError,{
         enableHighAccuracy:true,
         timeout:10000,
         maximumAge:2000
     })
 
-    const distance=calRemainDistance(riderLocation,destination)
 }
 
 function updateRiderPosition(coords){
+    if(!riderLocation){
+        riderLocation=[coords.latitude,coords.longitude]
+    }else{
     riderLocation[0]= coords.latitude,
     riderLocation[1]=coords.longitude
+    }
+
+
 }
 
 function stopTracking(){
@@ -102,30 +122,117 @@ function stopTracking(){
     showMessage("no longer tracking user")
 }
 
-function calRemainDistance(riderLocation,destination){
-   const  rlat=riderLocation[0]-destination[0]
-   const   rlang=riderLocation[1]-destination[1]
+function calculateRealDistance(lat1, lng1, lat2, lng2) {
+    // Earth's radius 
+    const R = 6371;
+    
+    // Convert degrees to radians
+    const dLat = toRadians(lat2 - lat1);
+    const dLng = toRadians(lng2 - lng1);
+    
+    // Haversine formula
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distance in kilometers
+    
+    return distance;
+}
 
-   return Math.sqrt((rlang*rlang)+(rlat*rlat))
-
+function toRadians(degrees) {
+    return degrees * (Math.PI / 180);
 }
 
 
-let customerLocation=[];
-const riderLocation=[6.6578,3.3567]
+async function fetchOrderdata(orderId){
+    try{
+   const response= await fetch(`api/orders/${orderId}`)
+   const order= await response.json()
 
-const riderMarker=L.marker(riderLocation).addTo(map).bindPopup('this is the rider')
+   console.log("order data received",order)
+   return order
 
-const destination=[6.9546,3.7543]
+}catch(error){
+    console.error("unable to get data order",error)
+    return null
+}
 
-const destinationMarker=L.marker(destination).addTo(map).bindPopup('destination')
+}
 
-const route=L.polyline([
-    customerLocation,
-    destination
-],{color:'blue'}
-).addTo(map)
+async function fetchRiderData(riderId){
+    try{
+    const response= await fetch(`api/users/${riderId}`)
+    const rider= await response.json()
 
+    console.log("sucessfully gotten data of rider")
+
+    return rider.location
+
+}catch(error){
+    console.error("unable to get rider location",error)
+    return null
+}
+}
+
+async function convertAddressToCoordinates(address){
+    try{
+        const response= await fetch(
+            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json`
+        )
+         const results=response.json()
+
+         if(results && results.length>0){
+            return{
+                lat: parseFloat(results[0].lat),
+                lng: parseFloat(results[0].lon)
+            }
+         }
+    }catch(error){
+        console.error("unable to get the destination coords",error)
+    }
+}
+
+async function Delivery(orderId){
+    const order= await fetchOrderdata(orderId)
+
+    if(!order){
+        console.log("no order with this id exists")
+    }
+
+    const riderId=order.rider
+
+    riderLocation= await fetchRiderData(riderId)
+
+     destination= await convertAddressToCoordinates(order.destination)
+
+    if(riderMarker)map.removeLayer(riderMarker)
+    if(destinationMarker)map.removeLayer(destinationMarker)
+
+     riderMarker=L.marker(
+        [riderLocation.latitude,riderLocation.longitude]
+    ).addTo(map).bindPopup("i am the rider")
+
+     destinationMarker=L.marker(
+        [destination.lat,destination.lng]
+    ).addTo(map).bindPopup("this is the destination")
+
+    if(customerMarker && destinationMarker){
+        L.polyline([
+            customerMarker,
+            destinationMarker
+        ],{color:"blue"}).addTo(map)
+    }
+      
+   const bounds= L.latLngBounds([])
+    if(customerMarker) bounds.extend(customerMarker.getLatLang())
+    if(riderMarker) bounds.extend(riderMarker.getLatLang())
+    if(destinationMarker) bounds.extend(destinationMarker.getLatLang())
+        map.fitBounds(bounds)
+
+        console.log("showing delivery")
+}
 
 
 
