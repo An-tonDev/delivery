@@ -1,4 +1,3 @@
-
 let map;
 let customerLocation=null;
 let riderLocation=null;
@@ -27,48 +26,6 @@ function showMessage(message){
      statusDiv.style.color= message.startsWith('error') ? 'red' :'grey'
 }
 
-function getUserCurrentLocation(){
-    if(!navigator.geolocation){
-      showMessage('error browser does not support location')
-      return
-    }
-
-    if(!map){
-        showMessage('error map was not initialized')
-        return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (position)=>{
-            const cusCoordinates={
-                lat:position.coords.latitude,
-                lng:position.coords.longitude,
-                accuracy: position.coords.accuracy
-            }
-            console.log('coordinates:',cusCoordinates)
-            map.eachLayer((layer)=>{
-                if(layer instanceof L.Marker){
-                    map.removeLayer(layer)
-                }
-            })
-            customerLocation=[cusCoordinates.lat,cusCoordinates.lng]
-
-          customerMarker=L.marker(customerLocation)
-           .addTo(map).
-           bindPopup('this is the customer location')
-           .openPopup()
-
-           map.setView(customerLocation, 15);
-            
-        }, handleError,{
-            enableHighAccuracy:true,
-            timeout:100000,
-            maximumAge:7000
-        }
-    )
-    
-}
-
 function handleError(error){
     switch(error.code){
         case error.PERMISSION_DENIED: showMessage("error access to location not granted")
@@ -82,14 +39,27 @@ function handleError(error){
     }
 }
 
+async function fetchRiderData(riderId){
+    try{
+    const response= await fetch(`api/users/${riderId}`)
+    const rider= await response.json()
 
+    console.log("sucessfully gotten data of rider")
+
+    return rider.location
+
+}catch(error){
+    console.error("unable to get rider location",error)
+    return null
+}
+}
 
 async function convertAddressToCoordinates(address){
     try{
         const response= await fetch(
             `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json`
         )
-         const results=response.json()
+         const results= await response.json()
 
          if(results && results.length>0){
             return{
@@ -102,18 +72,13 @@ async function convertAddressToCoordinates(address){
     }
 }
 
-async function Delivery(orderId){
-    const order= await fetchOrderdata(orderId)
-
-    if(!order){
-        console.log("no order with this id exists")
-    }
-
+async function Delivery(order){
+    
     const riderId=order.rider
 
     riderLocation= await fetchRiderData(riderId)
 
-     destination= await convertAddressToCoordinates(order.destination)
+    destination= await convertAddressToCoordinates(order.destination)
 
     if(riderMarker)map.removeLayer(riderMarker)
     if(destinationMarker)map.removeLayer(destinationMarker)
@@ -145,9 +110,89 @@ async function Delivery(orderId){
 
 
 
-document.getElementById('location').addEventListener('click',getUserCurrentLocation)
-document.getElementById('trackLocation').addEventListener('click',watchPosition)
-document.getElementById('stop').addEventListener('click', stopTracking)
+document.getElementById('placeOrder').addEventListener('click',function(){
+    document.getElementById('placeOrder').style.display='none'
+    document.getElementById('orderForm').style.display='block'
+})
+
+document.getElementById('submitOrder').addEventListener('click', async function(){
+
+    //get form data
+    const orderData={
+        name: document.getElementById('orderName').value,
+        recipientPhoneNo: document.getElementById('recipientPhone').value,
+        destination: document.getElementById('deliveryAddress').value,
+        transportPIN: document.getElementById('pickupPin').value,
+    }
+
+    document.getElementById('orderForm').style.display='none'
+    document.getElementById('mapContainer').style.display='block'
+
+         if(!navigator.geolocation){
+             showMessage(
+                "browser does not support location which is needed to make an order"
+            )
+             return
+         }
+
+         //get customer location
+         navigator.geolocation.getCurrentPosition((position)=>{
+            const coordinates={
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy
+            }    
+            
+            customerLocation=[coordinates.lat,coordinates.lng]
+
+            if(customerMarker){
+                map.removeLayer(customerMarker)
+            }
+            customerMarker= L.marker(customerLocation)
+            .addTo(map)
+            .bindPopup('customer location')
+
+         },
+         handleError,
+         {
+            enableHighAccuracy:true,
+            timeout:10000,
+            maximumAge:10000
+         })
+
+         //create the order
+        try{
+            const requestData = {
+        senderLocation: {
+            type: "Point",
+            coordinates: [
+                customerLocation[1], // Longitude (lng)
+                customerLocation[0]  // Latitude (lat)
+            ]
+        },
+        ...orderData
+    };
+            const response= await fetch('http://localhost:3000/api/orders',{
+                method:'POST',
+                headers:{'Content-type':'application/json'},
+                body:JSON.stringify(requestData)
+            })
+            const result= await response.json()
+
+            if(response.ok){
+                showMessage('assigning a rider now')
+            }else{
+                showMessage('error',result.message)
+            }
+                result.data._id
+               Delivery(result.data)
+                 
+        }catch(error){
+            showMessage("unable to place order")
+        }
+      
+
+})
 
 
 

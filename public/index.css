@@ -9,6 +9,18 @@
     padding: 10px;
     font-family: Arial, sans-serif;
 }
+ 
+#form-container { 
+    max-width: 500px;
+     margin: 0 auto;
+      padding: 20px; 
+    }
+
+input, textarea, button {
+width: 100%;
+padding: 10px; 
+margin: 10px 0;
+}
 
 button {
     padding: 10px 15px;

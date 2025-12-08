@@ -11,15 +11,36 @@
      
 </head>
 <body>
-   <div>
-     <button id="location">get current location</button>
-     <button id="trackLocation">Monitor location</button>
-     <button id="stop">Stop tracking location</button>
+    <div class="form-container">
+        <h2> Create Delivery Order</h2>
+        
+  <div id="orderForm" style="display:none;">
+            <h3>Delivery Details</h3>
+            
+            <label>Order name:</label>
+            <input type="text" id="orderName" placeholder="Who's receiving?">
+            
+            <label>Recipient Phone:</label>
+            <input type="tel" id="recipientPhone" placeholder="Phone number">
+            
+            <label>Destination :</label>
+            <textarea id="deliveryAddress" placeholder="Full delivery address"></textarea>
+            
+            <label>Transport PIN (4 digits):</label>
+            <input type="password" id="pickupPin" maxlength="4" placeholder="1234">
+
+            <button id="submitOrder">Request Delivery</button>
+        </div>
+     <div>
+    <button id="placeOrder">Place Delivery Order</button> 
     </div>
 
-    <div id="map"></div>
+    <div id="mapContainer" style="display: none;">
+                 
+        <div id="map"></div>
+        <div id="locationStatus"></div>
 
-    <div id="locationStatus"></div>
+    </div>
     
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
      integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="

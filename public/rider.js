@@ -36,7 +36,7 @@ function stopTracking(){
     if(watchId){
         navigator.geolocation.clearWatch(watchId)
     }
-    showMessage("no longer tracking user")
+    showMessage("no longer tracking rider")
 }
 
 function calculateRealDistance(lat1, lng1, lat2, lng2) {
@@ -62,34 +62,11 @@ function toRadians(degrees) {
     return degrees * (Math.PI / 180);
 }
 
-async function fetchOrderdata(orderId){
-    try{
-   const response= await fetch(`api/orders/${orderId}`)
-   const order= await response.json()
-
-   console.log("order data received",order)
-   return order
-
-}catch(error){
-    console.error("unable to get data order",error)
-    return null
+function showMessage(message){
+     const statusDiv=document.getElementById('locationStatus')
+     statusDiv.innerHTML=message
+     statusDiv.style.color= message.startsWith('error') ? 'red' :'grey'
 }
 
-}
-
-async function fetchRiderData(riderId){
-    try{
-    const response= await fetch(`api/users/${riderId}`)
-    const rider= await response.json()
-
-    console.log("sucessfully gotten data of rider")
-
-    return rider.location
-
-}catch(error){
-    console.error("unable to get rider location",error)
-    return null
-}
-}
 
 module.exports={}
