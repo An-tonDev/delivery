@@ -17,7 +17,7 @@ class NotFoundError extends AppError{
 
 class ValidationError extends AppError{
     constructor(errors){
-        super("invalid input details",400)
+        super("validation failed",400)
         this.errors=errors
     }
 }

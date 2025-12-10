@@ -1,6 +1,7 @@
 const mongoose= require('mongoose')
 const bcrypt= require('bcrypt')
 const crypto= require('crypto');
+const { validate } = require('./orderModel');
 
 
 const userSchema= new mongoose.Schema(
@@ -47,6 +48,7 @@ const userSchema= new mongoose.Schema(
      isAvailable:{
       type:Boolean,
       required:function(){return this.role === 'rider'},
+      default:'false'
      },
      rating:{
         type: Number,
@@ -61,10 +63,17 @@ const userSchema= new mongoose.Schema(
         enum:["Point"],
         default:"Point"
        },
-       required: function(){return this.role ==='rider'},
        coordinates:{
-        type:Number,
-        required:true
+        type:[Number],
+        required: function(){return this.role ==='rider'},
+        validate:{
+          validator:function(coords){
+            if(this.role !== 'rider')return true
+
+            return coords && coords.length == 2 && typeof coords[0] == 'number' 
+            && typeof coords[1] == 'number'
+          }
+        }
        },
        address:String,
        updatedAt:{
@@ -81,8 +90,10 @@ userSchema.index({location:'2dsphere'},
 
 
 userSchema.pre('save',async function(next){
-  if(!this.isModified('password')) return next
+  if(!this.isModified('password')) return next()
   this.password= bcrypt.hash(this.password,12)
+  this.passwordConfirm=undefined
+  next()
 })
 
 userSchema.methods.correctPassword= async function(canditatePassword,password){

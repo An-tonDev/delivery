@@ -13,8 +13,8 @@ const orderSchema= new mongoose.Schema(
     },
     sender:{
         type: mongoose.Schema.ObjectId,
-        ref:'User',
-        required:[true,"an order must be placed by a user"]
+        ref:'User'
+        //required:[true,"an order must be placed by a user"]
     },
     destination:{
         type:String,

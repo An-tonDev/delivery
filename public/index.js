@@ -41,18 +41,25 @@ function handleError(error){
 
 async function fetchRiderData(riderId){
     try{
-    const response= await fetch(`api/users/${riderId}`)
-    const rider= await response.json()
+       const response = await fetch(`http://localhost:6400/api/v1/users/${riderId}`);
+        const rider = await response.json();
+        console.log("Rider data:", rider);
 
     console.log("sucessfully gotten data of rider")
 
-    return rider.location
+   if (rider.location && rider.location.coordinates) {
+            return {
+                lat: rider.location.coordinates[1],
+                lng: rider.location.coordinates[0]
+            };
+        }
 
 }catch(error){
     console.error("unable to get rider location",error)
     return null
 }
 }
+
 
 async function convertAddressToCoordinates(address){
     try{
@@ -73,6 +80,7 @@ async function convertAddressToCoordinates(address){
 }
 
 async function Delivery(order){
+     console.log("Processing delivery for order:", order);
     
     const riderId=order.rider
 
@@ -89,19 +97,19 @@ async function Delivery(order){
 
      destinationMarker=L.marker(
         [destination.lat,destination.lng]
-    ).addTo(map).bindPopup("this is the destination")
+    ).addTo(map).bindPopup("destination"+order.destination)
 
     if(customerMarker && destinationMarker){
         L.polyline([
-            customerMarker,
-            destinationMarker
-        ],{color:"blue"}).addTo(map)
+            customerMarker.getLatLng(),
+            destinationMarker.getLatLng()
+        ],{color:"blue",weight:3}).addTo(map)
     }
       
    const bounds= L.latLngBounds([])
-    if(customerMarker) bounds.extend(customerMarker.getLatLang())
-    if(riderMarker) bounds.extend(riderMarker.getLatLang())
-    if(destinationMarker) bounds.extend(destinationMarker.getLatLang())
+    if(customerMarker) bounds.extend(customerMarker.getLatLng())
+    if(riderMarker) bounds.extend(riderMarker.getLatLng())
+    if(destinationMarker) bounds.extend(destinationMarker.getLatLng())
         map.fitBounds(bounds)
 
         console.log("showing delivery")
@@ -115,284 +123,110 @@ document.getElementById('placeOrder').addEventListener('click',function(){
     document.getElementById('orderForm').style.display='block'
 })
 
-document.getElementById('submitOrder').addEventListener('click', async function(){
-
-    //get form data
-    const orderData={
+document.getElementById('submitOrder').addEventListener('click', async function() {
+    // Get form data
+    const orderData = {
         name: document.getElementById('orderName').value,
         recipientPhoneNo: document.getElementById('recipientPhone').value,
         destination: document.getElementById('deliveryAddress').value,
         transportPIN: document.getElementById('pickupPin').value,
+    };
+    
+    // Validate form
+    if (!orderData.destination || !orderData.name) {
+        showMessage("error: Please fill in all required fields");
+        return;
     }
-
-    document.getElementById('orderForm').style.display='none'
-    document.getElementById('mapContainer').style.display='block'
-
-         if(!navigator.geolocation){
-             showMessage(
-                "browser does not support location which is needed to make an order"
-            )
-             return
-         }
-
-         //get customer location
-         navigator.geolocation.getCurrentPosition((position)=>{
-            const coordinates={
+    
+    document.getElementById('orderForm').style.display = 'none';
+    document.getElementById('mapContainer').style.display = 'block';
+    
+    if (!navigator.geolocation) {
+        showMessage("error: Browser does not support location which is needed to make an order");
+        return;
+    }
+    
+    // Get customer location
+    navigator.geolocation.getCurrentPosition(
+        async (position) => {
+            const coordinates = {
                 lat: position.coords.latitude,
                 lng: position.coords.longitude,
                 accuracy: position.coords.accuracy
-            }    
+            };
             
-            customerLocation=[coordinates.lat,coordinates.lng]
-
-            if(customerMarker){
-                map.removeLayer(customerMarker)
+            customerLocation = [coordinates.lat, coordinates.lng];
+            
+            // Create/update customer marker
+            if (customerMarker) {
+                map.removeLayer(customerMarker);
             }
-            customerMarker= L.marker(customerLocation)
-            .addTo(map)
-            .bindPopup('customer location')
-
-         },
-         handleError,
-         {
-            enableHighAccuracy:true,
-            timeout:10000,
-            maximumAge:10000
-         })
-
-         //create the order
-        try{
-            const requestData = {
-        senderLocation: {
-            type: "Point",
-            coordinates: [
-                customerLocation[1], // Longitude (lng)
-                customerLocation[0]  // Latitude (lat)
-            ]
+            customerMarker = L.marker(customerLocation)
+                .addTo(map)
+                .bindPopup('Your location')
+                .openPopup();
+            
+            // Center map on customer
+            map.setView(customerLocation, 15);
+            
+            showMessage("Creating your order...");
+            
+            // Create the order
+            try {
+                const requestData = {
+                    senderLocation: {
+                        type: "Point",
+                        coordinates: [
+                            customerLocation[1], // Longitude (lng)
+                            customerLocation[0]  // Latitude (lat)
+                        ]
+                    },
+                    ...orderData
+                };
+                
+                console.log("Sending order data:", requestData);
+                
+                const response = await fetch('http://localhost:6400/api/v1/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                console.log("Order creation response:", result);
+                
+                if (response.ok) {
+                    showMessage('Order created! Assigning rider...');
+                    // Call Delivery function with the created order
+                    Delivery(result.data || result);
+                } else {
+                    showMessage('error: ' + (result.message || 'Failed to create order'));
+                }
+                
+            } catch(error) {
+                console.error("Order creation error:", error);
+                showMessage("error: Unable to place order - " + error.message);
+            }
         },
-        ...orderData
-    };
-            const response= await fetch('http://localhost:3000/api/orders',{
-                method:'POST',
-                headers:{'Content-type':'application/json'},
-                body:JSON.stringify(requestData)
-            })
-            const result= await response.json()
-
-            if(response.ok){
-                showMessage('assigning a rider now')
-            }else{
-                showMessage('error',result.message)
-            }
-                result.data._id
-               Delivery(result.data)
-                 
-        }catch(error){
-            showMessage("unable to place order")
-        }
-      
-
-})
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/* //lagos
-var map=L.map('map').setView([6.5244,3.3792],13)
-L.tileLayer('https://{s}tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-}).addTo(map);
-
-
-//take an existing pin and move it to this location
-marker.setLatLng([6.5280,3.3800])
-
-//center map on a new location
-map.panTo([6.5280,3.3800])
-
-// exercise: simulation of delivery exercise
-function simulateRiderMovement(startcoords,endcoords,riderMarker,map){
-    const totalSteps=100
-    const stepDuration=100
-    let currentStep=0
-
-    const latStep=(endcoords[0]-startcoords[0])/totalSteps
-    const langStep=(endcoords[1]-startcoords[1])/totalSteps
-
-    const animationInterval= setInterval(()=>{
-        currentStep++
-        const hasArrived= moveRiderStepByStep(
-            latStep,
-            langStep,
-            riderMarker,
-            map,
-            currentStep,
-            totalSteps,
-            startcoords,
-            endcoords
-          )
-          if(hasArrived||currentStep>=totalSteps){
-            clearInterval(animationInterval)
-            console.log('rider has arrived at location')
-          }
-    },stepDuration)
-
-
-}
-
-//func to simulate rider
-function  moveRiderStepByStep(latStep,langStep,riderMarker,map, currentStep,
-totalSteps,startcoords,endcoords){
-
-    //current location
-      const newLat=startcoords[0]+(latStep*currentStep)
-      const newLang=startcoords[1]+(langStep*currentStep)
-
-            //rider marker
-      riderMarker.setLatLng([newLat,newLang])
-
-      if(currentStep%10 == 0){
-        map.panTo(newLang,newLat)
-      }
-
-      //progress
-      const progress=(currentStep/totalSteps)*100
-      console.log(`rider progress is ${progress.toFixed(1)}%`)
-
-      const riderDistanceToDest= calRemainDistance(newLat,newLang,endcoords[0],endcoords[1])
-
-      return riderDistanceToDest<0.001
-}
-
-//calculating the remaining distance
-function calRemainDistance(lat1,lang1,lat2,lang2){
-    const rLat= lat2-lat1
-    const rlang=lang2-lang1
-
-    return Math.sqrt((rlang*rlang)+(rLat*rLat))
-
-}
-
-const customerMarker=L.marker([6.5244,3.3792])
-.addTo(map)
-.bindpopup('this is the customer')
-
-const riderMarker=L.marker([6.5100,3.3690])
-.addTo(map)
-.bindpopup('rider')
-
-const destination=L.marker([6.6280,3.4800])
-.addTo(map)
-.bindpopup('finish line')
-
-const route=L.polyLine([
-    [6.5244,3.3792],
-    [6.6280,3.4800]
-],{color:'blue'}).addTo(map)
-
-document.getElementById('delivery').addEventListener('click',()=>{
-    simulateRiderMovement([6.5244,3.3792],[6.6280,3.4800],riderMarker,map)
-})
-
-
-
-
-
-
-//exercise: get current location at intervals
-function getUserLocation(){
-    if(!navigator.geolocation){
-        showMessage("this browser does not support location")
-        return
-    }
-
-    navigator.geolocation.getCurrentPosition(
-        (positon)=>{
-            const coords={
-                lat:positon.coords.latitude,
-                lng:positon.coords.longitude,
-                accuracy: positon.coords.accuracy
-            }
-            showMessage(`current position is at ${coords.lat},${coords.lng}`)
-        },handleError,
+        handleError,
         {
-            enableHighAccuracy:true,
-            timeout:10000,
-            maximumAge:10000
-        })
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+});
+
+// Initialize map view on load
+if (map) {
+    console.log("Map initialized successfully");
+    showMessage("Map ready. Click 'Place Order' to begin.");
 }
 
-function handleError(error){
-    switch(error.code){
-        case error.PERMISSION_DENIED: showMessage("access to location not granted")
-        break;
-        case error.POSITION_UNAVAILABLE: showMessage("location is not available")
-        break;
-        case error.TIMEOUT: showMessage("request took too long")
-        break;
-         default:
-            showMessage("an unexpected error occured")
-    }
-}
-
-function showMessage(message){
-    const statusDiv= document.getElementById('locationStatus')
-    statusDiv.innerHTML=message
-    statusDiv.style.color= 'red'
-}
-
-//get location at real time
-let watchId;
-function realTimeMonitor(){
- navigator.geolocation.watchPosition(
-    (position)=>{
-        updateRiderLocation(position.coords)
-    },
-    handleError,
-    {
-        enableHighAccuracy:true,
-        timeout:5000,
-        maximumAge:1500,
-    }
- )}
-
- function updateRiderLocation(coords){
-    const coordinates={
-        lat: coords.latitude,
-        lng: coords.longitude,
-        accuracy: coords.accuracy
-    }
-    showMessage(`current location: ${coordinates.lat},${coordinates.lng}`)
- }
-
- function stopTracking(){
-    if(watchId){
-        navigator.geolocation.clearWatch(watchId)
-    }
-    showMessage("no longer tracking user")
-    return;
- }
 
 
 
-document.getElementById('location').addEventListener('click',getUserLocation())
-document.getElementById('trackLocation').addEventListener('click',realTimeMonitor())
-document.getElementById('stop').addEventListener('click',stopTracking()) */
+
+
+
+

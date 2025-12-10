@@ -1,6 +1,13 @@
+const notFound = (req, res, next) => {
+  // Simple 404 handler without importing AppError
+  res.status(404).json({
+    status: 'fail',
+    message: `Route ${req.originalUrl} not found`
+  });
+};
 
 const globalErrorHandler = (err, req, res, next) => {
-  // Set defaults
+ 
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
   
@@ -10,46 +17,46 @@ const globalErrorHandler = (err, req, res, next) => {
       status: err.status,
       error: err,
       message: err.message,
-      stack: err.stack,
-      ...(err.errors && { errors: err.errors }),
-      ...(err.resource && { resource: err.resource })
+      stack: err.stack
     });
   } 
   // Production: Clean error messages
   else {
-    // Handle MongoDB/operational errors
+  
+    let message = err.message;
+    
     if (err.name === 'CastError') {
-      err = new AppError(400, `Invalid ${err.path}: ${err.value}`);
+      message = `Invalid ${err.path}: ${err.value}`;
+      err.statusCode = 400;
+      err.status = 'fail';
     }
     if (err.code === 11000) {
       const field = Object.keys(err.keyValue)[0];
-      err = new AppError(400, `${field} already exists`);
+      message = `${field} already exists`;
+      err.statusCode = 400;
+      err.status = 'fail';
     }
     if (err.name === 'ValidationError') {
       const errors = Object.values(err.errors).map(e => e.message);
-      err = new ValidationError(errors);
-    }
+      message = 'Validation failed';
+      err.statusCode = 400;
+      err.status = 'fail';
     
-    // Send response
-    const response = {
-      status: err.status,
-      message: err.message
-    };
-    
-    if (err instanceof ValidationError) {
-      response.errors = err.errors;
-    }
-    if (err instanceof NotFoundError) {
-      response.resource = err.resource;
-    }
-    
-    res.status(err.statusCode).json(response);
-  }
-};
 
-// 404 handler
-const notFound = (req, res, next) => {
-  next(new NotFoundError(`${req.originalUrl} route`));
+      res.status(err.statusCode).json({
+        status: err.status,
+        message: message,
+        errors: errors
+      });
+      return;
+    }
+    
+   
+    res.status(err.statusCode).json({
+      status: err.status,
+      message: message
+    });
+  }
 };
 
 module.exports = { globalErrorHandler, notFound };

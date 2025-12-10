@@ -1,25 +1,26 @@
-const express=require('express')
-const userController=require('../controllers/userController')
-const authController=require('../controllers/authController')
+const express = require('express')
+const userController = require('../controllers/userController')
+const authController = require('../controllers/authController')
 
-const router=express.Router()
+const router = express.Router()
 
-router.post('/forgotPassword',authController.forgotPassword).
-router.post('/resetPassword',authController.resetPassword).
-router.post('/login',authController.login).
-router.post('/signUp',authController.signup).
-router.get('/logout',authController.logout)
+// Public routes
+router.post('/forgotPassword', authController.forgotPassword)
+router.post('/resetPassword', authController.resetPassword)
+router.post('/login', authController.login)
+router.post('/signUp', authController.signup)
+router.get('/logout', authController.logout)
 
-router.use(authController.protect,authController.restrict('admin'))
+// Admin protected routes (apply middleware directly)
 router
 .route('/')
-.get(userController.getUsers)
-.post(userController.createUser)
+.get(authController.protect, authController.restrict('admin'), userController.getUsers)
+.post(authController.protect, authController.restrict('admin'), userController.createUser)
 
 router
 .route('/:id')
-.get(userController.getUser)
-.delete(userController.deleteUser)
-.patch(userController.updateuser)
+.get(authController.protect, authController.restrict('admin'), userController.getUser)
+.delete(authController.protect, authController.restrict('admin'), userController.deleteUser)
+.patch(authController.protect, authController.restrict('admin'), userController.updateuser)
 
-module.exports=router
+module.exports = router

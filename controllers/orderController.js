@@ -62,58 +62,56 @@ exports.deleteOrder=catchAsync (async(req,res,next)=>{
         })
 })
 
-exports.createOrder=catchAsync (async(req,res,next)=>{
-
-    const {Location, ...orderData} = req.body
-
-    const lat=parseFloat(location[0])
-    const lng=parseFloat(location[1])
-
-    if(isNaN(lng)||isNaN(lat)){
-            return next(new AppError('this is not a valid number',400))
-        }
-
-    const customerLocation={
-        type:'Point',
-        coordinates:[lat,lng]
+exports.createOrder = catchAsync(async(req, res, next) => {
+    
+    const { senderLocation, ...orderData } = req.body;
+    
+    if (!senderLocation || !senderLocation.coordinates) {
+        return next(new AppError('Sender location is required', 400));
     }
-        
-    const order= await Order.create(orderData)
+    
+    // Get coordinates from GeoJSON object
+    const [lng, lat] = senderLocation.coordinates;
+    
+     //Create GeoJSON point for query
+    const customerLocation = {
+        type: 'Point',
+        coordinates: [parseFloat(lng), parseFloat(lat)] 
+    };
+    
 
-    if(!order){
-       return next(new AppError("order was not created",400))
-    }
-
-    const nearByRiders= await User.find({
-        role:'rider',
-        isAvailable:true,
-        location:{
-            $near:{ 
-                $geometry:customerLocation,
+    const order = await Order.create(orderData);
+    
+     
+    const nearByRiders = await User.find({
+        role: 'rider',
+        isAvailable: true,
+        location: {
+            $near: {
+                $geometry: customerLocation,
                 $maxDistance: 12000
             }
         }
-    }).sort({rating:-1}).limit(3)
-
-    if(!nearByRiders){
-      return next(new NotFoundError("riders close to your location",404))  
+    }).sort({ rating: -1 }).limit(3);
+    
+   
+    if (!nearByRiders || nearByRiders.length === 0) {
+        return next(new NotFoundError("No riders available near your location", 404));
     }
-
-    const rider= nearByRiders[0]
-
-    order.rider=rider._id
-    order.status="order_assigned"
-
-    await order.save()
-       
+    
+    //Assign rider
+    const rider = nearByRiders[0];
+    order.rider = rider._id;
+    order.status = "order_assigned";
+    await order.save();
+    
+ 
     res.status(201).json({
-        status:"success",
-        message: `your order ${order.name} has been assigned to 
-        rider ${rider.username} to take to your desired destination`,
-        data: {order}
-    })
-
-})
+        status: "success",
+        message: `Rider ${rider.username} assigned to your order`,
+        data: { order}
+    });
+});
 
 
 
