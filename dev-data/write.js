@@ -1,7 +1,7 @@
 const fs=require('fs')
 const dotenv=require('dotenv')
 const Order=require('../models/orderModel')
-const { default: mongoose } = require('mongoose')
+const mongoose = require('mongoose')
 
 dotenv.config({path:`${__dirname}/../.env`})
 

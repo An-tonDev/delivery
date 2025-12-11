@@ -41,7 +41,7 @@ function handleError(error){
 
 async function fetchRiderData(riderId){
     try{
-       const response = await fetch(`http://localhost:6400/api/v1/users/${riderId}`);
+       const response = await fetch(`http://localhost:32000/api/v1/users/${riderId}`);
         const rider = await response.json();
         console.log("Rider data:", rider);
 
@@ -186,7 +186,7 @@ document.getElementById('submitOrder').addEventListener('click', async function(
                 
                 console.log("Sending order data:", requestData);
                 
-                const response = await fetch('http://localhost:6400/api/v1/orders', {
+                const response = await fetch('http://localhost:32000/api/v1/orders', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(requestData)
