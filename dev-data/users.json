@@ -1,72 +1,227 @@
 [
   {
-    "username": "john_doe",
-    "email": "john@example.com",
-    "password": "password123",
-    "passwordConfirm": "password123",
-    "role": "user"
+    "_id": "64a1b2c3d4e5f67890123456",
+    "username": "rider_mike_vi",
+    "email": "mike.vi@delivery.com",
+    "password": "$2b$12$abc123...",
+    "passwordConfirm": "$2b$12$abc123...",
+    "role": "rider",
+    "isAvailable": true,
+    "rating": 4.8,
+    "location": {
+      "type": "Point",
+      "coordinates": [3.3792, 6.5244],
+      "address": "Victoria Island, Lagos",
+      "updatedAt": "2024-01-15T10:30:00Z"
+    },
+    "__v": 0
   },
   {
-    "username": "sarah_dev",
-    "email": "sarah.dev@example.com",
-    "password": "sarahpass1",
-    "passwordConfirm": "sarahpass1",
-    "role": "admin"
+    "_id": "64b2c3d4e5f6789012345678",
+    "username": "rider_amina_ikeja",
+    "email": "amina.ikeja@delivery.com",
+    "password": "$2b$12$def456...",
+    "passwordConfirm": "$2b$12$def456...",
+    "role": "rider",
+    "isAvailable": true,
+    "rating": 4.9,
+    "location": {
+      "type": "Point",
+      "coordinates": [3.3426, 6.5865],
+      "address": "Ikeja City Mall, Lagos",
+      "updatedAt": "2024-01-15T11:15:00Z"
+    },
+    "__v": 0
   },
   {
-    "username": "mike_rider",
-    "email": "mike.rider@example.com",
-    "password": "riderpass7",
-    "passwordConfirm": "riderpass7",
-    "role": "rider"
+    "_id": "64c3d4e5f678901234567890",
+    "username": "rider_chike_ajah",
+    "email": "chike.ajah@delivery.com",
+    "password": "$2b$12$ghi789...",
+    "passwordConfirm": "$2b$12$ghi789...",
+    "role": "rider",
+    "isAvailable": false,
+    "rating": 4.5,
+    "location": {
+      "type": "Point",
+      "coordinates": [3.3915, 6.4556],
+      "address": "Ajah, Lagos",
+      "updatedAt": "2024-01-15T09:45:00Z"
+    },
+    "__v": 0
   },
   {
-    "username": "anna_smith",
-    "email": "anna.smith@example.com",
-    "password": "mypassword9",
-    "passwordConfirm": "mypassword9",
-    "role": "user"
+    "_id": "64d4e5f67890123456789012",
+    "username": "rider_tunde_lekki",
+    "email": "tunde.lekki@delivery.com",
+    "password": "$2b$12$jkl012...",
+    "passwordConfirm": "$2b$12$jkl012...",
+    "role": "rider",
+    "isAvailable": true,
+    "rating": 4.7,
+    "location": {
+      "type": "Point",
+      "coordinates": [3.4732, 6.4657],
+      "address": "Lekki Phase 1, Lagos",
+      "updatedAt": "2024-01-15T12:00:00Z"
+    },
+    "__v": 0
   },
   {
-    "username": "kevin_admin",
-    "email": "kevin.admin@example.com",
-    "password": "adminsecure5",
-    "passwordConfirm": "adminsecure5",
-    "role": "admin"
+    "_id": "64e5f6789012345678901234",
+    "username": "rider_blessing_surulere",
+    "email": "blessing.surulere@delivery.com",
+    "password": "$2b$12$mno345...",
+    "passwordConfirm": "$2b$12$mno345...",
+    "role": "rider",
+    "isAvailable": true,
+    "rating": 4.6,
+    "location": {
+      "type": "Point",
+      "coordinates": [3.3556, 6.4998],
+      "address": "Surulere, Lagos",
+      "updatedAt": "2024-01-15T13:20:00Z"
+    },
+    "__v": 0
   },
   {
-    "username": "linda_j",
-    "email": "linda.j@example.com",
-    "password": "linda12345",
-    "passwordConfirm": "linda12345",
-    "role": "user"
+    "_id": "64f678901234567890123456",
+    "username": "rider_emeka_maryland",
+    "email": "emeka.maryland@delivery.com",
+    "password": "$2b$12$pqr678...",
+    "passwordConfirm": "$2b$12$pqr678...",
+    "role": "rider",
+    "isAvailable": true,
+    "rating": 4.4,
+    "location": {
+      "type": "Point",
+      "coordinates": [3.3654, 6.5789],
+      "address": "Maryland, Lagos",
+      "updatedAt": "2024-01-15T14:10:00Z"
+    },
+    "__v": 0
   },
   {
-    "username": "peter_rider",
-    "email": "peter.rider@example.com",
-    "password": "peterpass8",
-    "passwordConfirm": "peterpass8",
-    "role": "rider"
+    "_id": "64a789012345678901234567",
+    "username": "rider_funke_oshodi",
+    "email": "funke.oshodi@delivery.com",
+    "password": "$2b$12$stu901...",
+    "passwordConfirm": "$2b$12$stu901...",
+    "role": "rider",
+    "isAvailable": false,
+    "rating": 4.3,
+    "location": {
+      "type": "Point",
+      "coordinates": [3.3365, 6.5543],
+      "address": "Oshodi, Lagos",
+      "updatedAt": "2024-01-15T15:30:00Z"
+    },
+    "__v": 0
   },
   {
-    "username": "victoria_u",
-    "email": "victoria.u@example.com",
-    "password": "victoria99",
-    "passwordConfirm": "victoria99",
-    "role": "user"
+    "_id": "64b890123456789012345678",
+    "username": "rider_segun_yaba",
+    "email": "segun.yaba@delivery.com",
+    "password": "$2b$12$vwx234...",
+    "passwordConfirm": "$2b$12$vwx234...",
+    "role": "rider",
+    "isAvailable": true,
+    "rating": 4.8,
+    "location": {
+      "type": "Point",
+      "coordinates": [3.3876, 6.5123],
+      "address": "Yaba, Lagos",
+      "updatedAt": "2024-01-15T16:45:00Z"
+    },
+    "__v": 0
   },
   {
-    "username": "daniel_dev",
-    "email": "daniel.dev@example.com",
-    "password": "devpass12",
-    "passwordConfirm": "devpass12",
-    "role": "admin"
+    "_id": "64c901234567890123456789",
+    "username": "rider_grace_ikoyi",
+    "email": "grace.ikoyi@delivery.com",
+    "password": "$2b$12$yzab56...",
+    "passwordConfirm": "$2b$12$yzab56...",
+    "role": "rider",
+    "isAvailable": true,
+    "rating": 4.9,
+    "location": {
+      "type": "Point",
+      "coordinates": [3.4321, 6.4489],
+      "address": "Ikoyi, Lagos",
+      "updatedAt": "2024-01-15T17:15:00Z"
+    },
+    "__v": 0
   },
   {
-    "username": "chloe_r",
-    "email": "chloe.r@example.com",
-    "password": "riderpass22",
-    "passwordConfirm": "riderpass22",
-    "role": "rider"
+    "_id": "64d012345678901234567890",
+    "username": "customer_john_vi",
+    "email": "john.customer@email.com",
+    "password": "$2b$12$cdef78...",
+    "passwordConfirm": "$2b$12$cdef78...",
+    "role": "user",
+    "isAvailable": false,
+    "rating": 0,
+    "location": null,
+    "__v": 0
+  },
+  {
+    "_id": "64e123456789012345678901",
+    "username": "customer_sarah_ikeja",
+    "email": "sarah.customer@email.com",
+    "password": "$2b$12$ghij90...",
+    "passwordConfirm": "$2b$12$ghij90...",
+    "role": "user",
+    "isAvailable": false,
+    "rating": 0,
+    "location": null,
+    "__v": 0
+  },
+  {
+    "_id": "64f234567890123456789012",
+    "username": "customer_chibuike",
+    "email": "chibuike.business@email.com",
+    "password": "$2b$12$klmn12...",
+    "passwordConfirm": "$2b$12$klmn12...",
+    "role": "user",
+    "isAvailable": false,
+    "rating": 0,
+    "location": null,
+    "__v": 0
+  },
+  {
+    "_id": "64a345678901234567890123",
+    "username": "customer_amaka",
+    "email": "amaka.shopper@email.com",
+    "password": "$2b$12$nopq34...",
+    "passwordConfirm": "$2b$12$nopq34...",
+    "role": "user",
+    "isAvailable": false,
+    "rating": 0,
+    "location": null,
+    "__v": 0
+  },
+  {
+    "_id": "64b456789012345678901234",
+    "username": "customer_david",
+    "email": "david.office@email.com",
+    "password": "$2b$12$qrst56...",
+    "passwordConfirm": "$2b$12$qrst56...",
+    "role": "user",
+    "isAvailable": false,
+    "rating": 0,
+    "location": null,
+    "__v": 0
+  },
+  {
+    "_id": "64c567890123456789012345",
+    "username": "admin_bola",
+    "email": "bola.admin@company.com",
+    "password": "$2b$12$uvwx78...",
+    "passwordConfirm": "$2b$12$uvwx78...",
+    "role": "admin",
+    "isAvailable": false,
+    "rating": 0,
+    "location": null,
+    "__v": 0
   }
 ]

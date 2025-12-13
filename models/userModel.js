@@ -78,7 +78,7 @@ const userSchema= new mongoose.Schema(
        address:String,
        updatedAt:{
         type:Date,
-        default: Date.now()
+        default: Date.now
        }
      },
      passwordResetToken: String,
