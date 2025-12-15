@@ -3,6 +3,8 @@ const User=require('../models/userModel')
 const catchAsync=require('../utils/catchAsync')
 const {AppError,NotFoundError}=require('../utils/appError')
 const ApiFeatures=require('../utils/apiFeatures')
+const fetch= require('node-fetch')
+const { headers } = require('next/headers')
 
 
 
@@ -114,8 +116,23 @@ exports.createOrder = catchAsync(async(req, res, next) => {
 });
 
 
+exports.geocodeAddress= catchAsync(async(req,res)=>{
+    const {address}=req.query
 
-
+    const response= await fetch(`https://nominatim.openstreetmap/search?q=${encodeURIComponent(address)}&format=json`,{
+        headers:{
+            'User-Agent':'delivery/app 1.0 (delivery@gmail.com)'
+        }
+    })
+})
+  const data= await response.json()
+  if(!data.length){
+    res.status(404).json({status:'fail',message:'address not found'})
+  }
+   res.json({
+      lat: parseFloat(data[0].lat),
+      lng:parseFloat(data[0].lon)
+   })
 
 
 

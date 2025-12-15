@@ -1,3 +1,4 @@
+console.log("js file loaded")
 let map;
 let customerLocation=null;
 let riderLocation=null;
@@ -6,19 +7,25 @@ let customerMarker=null
 let destinationMarker=null
 let riderMarker=null
 
-try{
- map=L.map('map').setView([6.626498,3.356744],13)
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    maxZoom: 19,
-    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-}).addTo(map);
+function initMap() {
+    try{
+  map = L.map('map').setView([6.626498, 3.356744], 13);
 
-}
-catch(error){
+  L.tileLayer(
+    'https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+    {
+      subdomains: 'abcd',
+      maxZoom: 19
+    }
+  ).addTo(map);
 
-    console.error('there is an error initalizing map',error)
+  console.log("Map initialized successfully");
+}catch(error){
+      console.error('there is an error initalizing map',error)
     showMessage("error cannot initialize map")
-}
+}}
+
+
 
 function showMessage(message){
      const statusDiv=document.getElementById('locationStatus')
@@ -64,16 +71,10 @@ async function fetchRiderData(riderId){
 async function convertAddressToCoordinates(address){
     try{
         const response= await fetch(
-            `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json`
+            `http://localhost:32000/api/v1/orders/geocode?address=${encodeURIComponent(address)}`
         )
-         const results= await response.json()
-
-         if(results && results.length>0){
-            return{
-                lat: parseFloat(results[0].lat),
-                lng: parseFloat(results[0].lon)
-            }
-         }
+         return await response.json()
+         
     }catch(error){
         console.error("unable to get the destination coords",error)
     }
@@ -84,15 +85,17 @@ async function Delivery(order){
     
     const riderId=order.rider
 
-    riderLocation= await fetchRiderData(riderId)
-
     destination= await convertAddressToCoordinates(order.destination)
+     riderLocation= await fetchRiderData(riderId)
+     if(!riderLocation){
+        showMessage('rider location not available')
+     }
 
     if(riderMarker)map.removeLayer(riderMarker)
     if(destinationMarker)map.removeLayer(destinationMarker)
 
      riderMarker=L.marker(
-        [riderLocation.latitude,riderLocation.longitude]
+        [riderLocation.lat,riderLocation.lng]
     ).addTo(map).bindPopup("i am the rider")
 
      destinationMarker=L.marker(
@@ -140,6 +143,10 @@ document.getElementById('submitOrder').addEventListener('click', async function(
     
     document.getElementById('orderForm').style.display = 'none';
     document.getElementById('mapContainer').style.display = 'block';
+    
+
+    initMap();
+
     
     if (!navigator.geolocation) {
         showMessage("error: Browser does not support location which is needed to make an order");
@@ -198,7 +205,7 @@ document.getElementById('submitOrder').addEventListener('click', async function(
                 if (response.ok) {
                     showMessage('Order created! Assigning rider...');
                     // Call Delivery function with the created order
-                    Delivery(result.data || result);
+                    Delivery(result.data.order);
                 } else {
                     showMessage('error: ' + (result.message || 'Failed to create order'));
                 }
@@ -211,8 +218,8 @@ document.getElementById('submitOrder').addEventListener('click', async function(
         handleError,
         {
             enableHighAccuracy: true,
-            timeout: 10000,
-            maximumAge: 0
+            timeout: 15000,
+            maximumAge:10000
         }
     );
 });
@@ -220,7 +227,6 @@ document.getElementById('submitOrder').addEventListener('click', async function(
 // Initialize map view on load
 if (map) {
     console.log("Map initialized successfully");
-    showMessage("Map ready. Click 'Place Order' to begin.");
 }
 
 

@@ -5,6 +5,9 @@ const router=express.Router()
 
 //router.use('/',authController.protect)
 
+
+router.get('/geocode', orderController.geocodeAddress)
+
 router
 .route('/')
 .get(authController.restrict('admin'),orderController.getOrders)
