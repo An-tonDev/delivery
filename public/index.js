@@ -48,16 +48,19 @@ function handleError(error){
 
 async function fetchRiderData(riderId){
     try{
-       const response = await fetch(`http://localhost:32000/api/v1/users/${riderId}`);
-        const rider = await response.json();
-        console.log("Rider data:", rider);
+      const response = await fetch(
+  `http://localhost:32000/api/v1/users/rider-location/${riderId}`
+);
 
-    console.log("sucessfully gotten data of rider")
+        const riderLo = await response.json();
+        console.log("Rider location data:", riderLo);
 
-   if (rider.location && rider.location.coordinates) {
+    console.log("sucessfully gotten location data of rider")
+
+   if (riderLo) {
             return {
-                lat: rider.location.coordinates[1],
-                lng: rider.location.coordinates[0]
+                lat: riderLo.lat,
+                lng: riderLo.lng
             };
         }
 
@@ -86,12 +89,22 @@ async function Delivery(order){
     const riderId=order.rider
 
     destination= await convertAddressToCoordinates(order.destination)
-     riderLocation= await fetchRiderData(riderId)
-     if(!riderLocation){
-        showMessage('rider location not available')
+
+        if(!destination){
+        showMessage('destination not available')
+        return
      }
 
+     riderLocation= await fetchRiderData(riderId)
+
+     if(!riderLocation){
+        showMessage('rider location not available')
+        return
+     }
+
+
     if(riderMarker)map.removeLayer(riderMarker)
+
     if(destinationMarker)map.removeLayer(destinationMarker)
 
      riderMarker=L.marker(
@@ -100,7 +113,7 @@ async function Delivery(order){
 
      destinationMarker=L.marker(
         [destination.lat,destination.lng]
-    ).addTo(map).bindPopup("destination"+order.destination)
+    ).addTo(map).bindPopup("destination "+order.destination)
 
     if(customerMarker && destinationMarker){
         L.polyline([
@@ -144,9 +157,9 @@ document.getElementById('submitOrder').addEventListener('click', async function(
     document.getElementById('orderForm').style.display = 'none';
     document.getElementById('mapContainer').style.display = 'block';
     
-
+ if(!map){
     initMap();
-
+ }
     
     if (!navigator.geolocation) {
         showMessage("error: Browser does not support location which is needed to make an order");

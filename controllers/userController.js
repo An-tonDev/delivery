@@ -65,3 +65,19 @@ exports.createUser=catchAsync (async(req,res,next)=>{
             data:{user}
         })
 })
+
+exports.getRiderLocation = catchAsync(async (req, res, next) => {
+  const rider = await User.findById(req.params.id).select('location');
+
+  if (!rider || !rider.location) {
+    return res.status(404).json({
+      status: 'fail',
+      message: 'Rider location not available'
+    });
+  }
+
+  res.json({
+    lat: rider.location.coordinates[1],
+    lng: rider.location.coordinates[0]
+  });
+});

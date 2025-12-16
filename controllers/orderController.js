@@ -3,9 +3,6 @@ const User=require('../models/userModel')
 const catchAsync=require('../utils/catchAsync')
 const {AppError,NotFoundError}=require('../utils/appError')
 const ApiFeatures=require('../utils/apiFeatures')
-const fetch= require('node-fetch')
-const { headers } = require('next/headers')
-
 
 
 exports.getOrders=catchAsync (async(req,res,next)=>{
@@ -116,25 +113,41 @@ exports.createOrder = catchAsync(async(req, res, next) => {
 });
 
 
-exports.geocodeAddress= catchAsync(async(req,res)=>{
-    const {address}=req.query
+exports.geocodeAddress = catchAsync (async (req, res, next) => {
+  try {
+    const { address } = req.query;
 
-    const response= await fetch(`https://nominatim.openstreetmap/search?q=${encodeURIComponent(address)}&format=json`,{
-        headers:{
-            'User-Agent':'delivery/app 1.0 (delivery@gmail.com)'
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search` +
+      `?q=${encodeURIComponent(address)}` +
+      `&format=json` +
+      `&limit=1` +
+      `&countrycodes=ng`,
+      {
+        headers: {
+          'User-Agent': 'delivery-app'
         }
-    })
-})
-  const data= await response.json()
-  if(!data.length){
-    res.status(404).json({status:'fail',message:'address not found'})
-  }
-   res.json({
+      }
+    );
+
+    const data = await response.json();
+
+    if (!data.length) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'Address not found'
+      });
+    }
+
+    res.status(200).json({
       lat: parseFloat(data[0].lat),
-      lng:parseFloat(data[0].lon)
-   })
+      lng: parseFloat(data[0].lon)
+    });
 
-
+  } catch (err) {
+    next(err);
+  }
+})
 
 
 /* //examples for learning about socket.io

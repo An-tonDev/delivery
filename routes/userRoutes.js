@@ -11,6 +11,8 @@ router.post('/login', authController.login)
 router.post('/signUp', authController.signup)
 router.get('/logout', authController.logout)
 
+router.get('/rider-location/:id', userController.getRiderLocation);
+
 // Admin protected routes (apply middleware directly)
 router
 .route('/')
@@ -19,7 +21,7 @@ router
 
 router
 .route('/:id')
-.get(authController.protect, authController.restrict('admin'), userController.getUser)
+.get(userController.getUser)
 .delete(authController.protect, authController.restrict('admin'), userController.deleteUser)
 .patch(authController.protect, authController.restrict('admin'), userController.updateuser)
 
