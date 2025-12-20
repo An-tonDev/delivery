@@ -7,6 +7,17 @@ let customerMarker=null
 let destinationMarker=null
 let riderMarker=null
 
+const socket= io('http://localhost:32000')
+
+socket.on('connected', ()=>{
+    console.log("connected to the server")
+    
+})
+
+socket.on('disconnected', ()=>{
+    console.log('disconnected from the server')
+})
+
 function initMap() {
     try{
   map = L.map('map').setView([6.626498, 3.356744], 13);

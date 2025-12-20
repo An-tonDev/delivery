@@ -8,7 +8,7 @@ exports.getUsers=catchAsync (async(req,res,next)=>{
     const users= await User.find()
 
     if(!users){
-        return next(new NotFoundError(`user database is empty`,404))
+        return next(new NotFoundError(`users`,404))
     }
      
         res.status(200).json({

@@ -95,7 +95,7 @@ exports.createOrder = catchAsync(async(req, res, next) => {
     
    
     if (!nearByRiders || nearByRiders.length === 0) {
-        return next(new NotFoundError("No riders available near your location", 404));
+        return next(new NotFoundError(" available riders near your location", 404));
     }
     
     //Assign rider
