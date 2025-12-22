@@ -9,13 +9,21 @@ let riderMarker=null
 
 const socket= io('http://localhost:32000')
 
-socket.on('connected', ()=>{
-    console.log("connected to the server")
+console.log('io exists?', typeof io); // Should be 'function'
+
+socket.on('connect', ()=>{
+
+console.log("connected to the rt tracking server")
     
+console.log('socket connected?', socket.connected); // Should be true/false
+
+
+socket.emit('test', { message: 'Hello from frontend!' });
+
 })
 
-socket.on('disconnected', ()=>{
-    console.log('disconnected from the server')
+socket.on('disconnect', ()=>{
+    console.log('disconnected from the rt tracking server')
 })
 
 function initMap() {
@@ -101,7 +109,7 @@ async function Delivery(order){
 
     destination= await convertAddressToCoordinates(order.destination)
 
-        if(!destination){
+    if(!destination){
         showMessage('destination not available')
         return
      }
@@ -252,6 +260,9 @@ document.getElementById('submitOrder').addEventListener('click', async function(
 if (map) {
     console.log("Map initialized successfully");
 }
+
+
+
 
 
 

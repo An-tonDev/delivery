@@ -5,8 +5,7 @@ const {globalErrorHandler}=require('./controllers/errorController')
 const app=express()
 const userRouter=require('./routes/userRoutes')
 const orderRouter=require('./routes/orderRoutes')
-const socketIO=require('socket.io')
-const http=require('http')
+
 
 app.use(express.json())
 
@@ -18,16 +17,8 @@ if(process.env.NODE_ENV === 'development'){
 
 
 
-const server= http.createServer(app)
-const io= socketIO(server)
-
-
 app.use('/api/v1/users',userRouter)
 app.use('/api/v1/orders',orderRouter)
-
-server.listen(6400,()=>{
-  console.log("socket is axtive on 6400")
-})
 
 const catchAllHandler = (req, res) => {
   res.status(404).json({
