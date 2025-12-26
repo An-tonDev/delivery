@@ -23,7 +23,7 @@ io.on('connection',(socket)=>{
   console.log("scet is running "+socket.id)
 
   socket.on('disconnect',()=>{
-    console.log("socket is disconnected")
+    console.log("socket is disconnected "+socket.id)
   })
 
 })

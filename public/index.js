@@ -9,16 +9,14 @@ let riderMarker=null
 
 const socket= io('http://localhost:32000')
 
-console.log('io exists?', typeof io); // Should be 'function'
-
 socket.on('connect', ()=>{
 
 console.log("connected to the rt tracking server")
     
-console.log('socket connected?', socket.connected); // Should be true/false
+console.log('socket connected?', socket.connected)
 
 
-socket.emit('test', { message: 'Hello from frontend!' });
+socket.emit('test', { message: 'Hello from frontend!' })
 
 })
 

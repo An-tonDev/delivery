@@ -2,9 +2,11 @@ let riderLocation=null
 let watchId=null
 
 function watchPosition(){
+
      if(watchId){
         navigator.geolocation.clearWatch(watchId)
     }
+    
     watchId= navigator.geolocation.watchPosition((position)=>{
             updateRiderPosition(position.coords)
             if(destination){
@@ -68,5 +70,55 @@ function showMessage(message){
      statusDiv.style.color= message.startsWith('error') ? 'red' :'grey'
 }
 
+function simulateRiderMovement(startcoords,endcoords, map, riderMarker){
+    const totalSteps=100
+    const stepDuration=100
+    let currentStep=0
 
+    const latStep=(endcoords[0]-startcoords[0])/totalSteps
+    const lngStep=(endcoords[1]-startcoords[0])/totalSteps
+
+    const animationInterval= setInterval(()=>{
+
+    const hasArrived= moveRiderStepByStep(
+        startcoords,
+        endcoords,
+        riderMarker,
+        map,
+        latStep,
+        lngStep,
+        currentStep,
+        totalSteps
+    )
+
+    if(hasArrived || currentStep>=totalSteps){
+        clearInterval(animationInterval)
+        console.log("delivery completed")
+    }
+        
+    },stepDuration)
+
+
+}
+
+
+function moveRiderStepByStep(startcoords,endcoords,riderMarker,map,latStep,lngStep,currentStep,totalSteps){
+
+    const newLat= startcoords[0]+(latStep*currentStep)
+    const newLng= startcoords[1]+(lngStep*currentStep)
+
+    riderMarker.setView(newLat,newLng)
+
+    const progress= (currentStep/totalSteps) * 100
+    
+    if(currentStep %10 === 0){
+        map.panTo(newLat,newLng)
+    }
+
+    const distanceToDestination= calculateRealDistance(newLat,newLng,endcoords[0],endcoords[1])
+
+
+    return distanceToDestination < 0.001
+     
+}
 module.exports={}
