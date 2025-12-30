@@ -6,6 +6,7 @@ let destination=null;
 let customerMarker=null
 let destinationMarker=null
 let riderMarker=null
+let isFinalLeg=true
 
 const socket= io('http://localhost:32000')
 
@@ -23,6 +24,19 @@ socket.emit('test', { message: 'Hello from frontend!' })
 socket.on('disconnect', ()=>{
     console.log('disconnected from the rt tracking server')
 })
+
+// REAL-TIME LISTENERS (FRONTEND)
+
+socket.on('rider_moved', (data) => {
+  console.log(' rider moved', data.location);
+});
+
+socket.on('delivery_success', (data) => {
+  showMessage(' Delivery completed successfully');
+  console.log('Delivery finished:', data);
+});
+
+
 
 function initMap() {
     try{
@@ -102,24 +116,23 @@ async function convertAddressToCoordinates(address){
 
 async function Delivery(order){
      console.log("Processing delivery for order:", order);
+
+     socket.emit('join_order',{
+        orderId: order._id,
+        role:'customer'
+     })
     
     const riderId=order.rider
 
     destination= await convertAddressToCoordinates(order.destination)
 
-    if(!destination){
-        showMessage('destination not available')
-        return
-     }
-
+    if(!destination) return showMessage('destination not available')
+        
      riderLocation= await fetchRiderData(riderId)
 
-     if(!riderLocation){
-        showMessage('rider location not available')
-        return
-     }
+     if(!riderLocation) return showMessage('rider location not available')
 
-
+    
     if(riderMarker)map.removeLayer(riderMarker)
 
     if(destinationMarker)map.removeLayer(destinationMarker)
@@ -146,17 +159,37 @@ async function Delivery(order){
         map.fitBounds(bounds)
 
         console.log("showing delivery")
+
+        showMessage("going to customer location")
+            
+        socket.emit('join_order',{
+        orderId:order._id,
+        role:'rider'
+    })
+
+       await simulateRiderMovement([riderLocation.lat,riderLocation.lng],customerLocation,
+        map,riderMarker,order._id,riderId)
+
+        showMessage(" delivery item picked, going to destination")
+
+        await simulateRiderMovement(customerLocation, [destination.lat,destination.lng],
+        map,riderMarker,order._id,riderId,isFinalLeg)
+
+        showMessage("delivery")
+
 }
 
 
 
 
 document.getElementById('placeOrder').addEventListener('click',function(){
+
     document.getElementById('placeOrder').style.display='none'
     document.getElementById('orderForm').style.display='block'
 })
 
 document.getElementById('submitOrder').addEventListener('click', async function() {
+
     // Get form data
     const orderData = {
         name: document.getElementById('orderName').value,
@@ -254,11 +287,107 @@ document.getElementById('submitOrder').addEventListener('click', async function(
     );
 });
 
-// Initialize map view on load
-if (map) {
-    console.log("Map initialized successfully");
+
+
+//rider simulation helper functions
+
+
+
+function calculateRealDistance(lat1, lng1, lat2, lng2) {
+    // Earth's radius 
+    const R = 6371;
+    
+    // Convert degrees to radians
+    const dLat = toRadians(lat2 - lat1);
+    const dLng = toRadians(lng2 - lng1);
+    
+    // Haversine formula
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c; // Distance in kilometers
+    
+    return distance;
 }
 
+function toRadians(degrees) {
+    return degrees * (Math.PI / 180);
+}
+
+
+function simulateRiderMovement(startcoords,endcoords, map, riderMarker,orderId,riderId,isFinalLeg){
+    return new Promise((resolve)=>{
+    const totalSteps=100
+    const stepDuration=100
+    let currentStep=0
+
+    const latStep=(endcoords[0]-startcoords[0])/totalSteps
+    const lngStep=(endcoords[1]-startcoords[1])/totalSteps
+
+    const animationInterval= setInterval(()=>{
+            currentStep++
+
+    const hasArrived= moveRiderStepByStep(
+        startcoords,
+        endcoords,
+        riderMarker,
+        map,
+        latStep,
+        lngStep,
+        currentStep,
+        totalSteps,
+        orderId,
+        riderId
+    )
+
+    if(hasArrived || currentStep>=totalSteps){
+        clearInterval(animationInterval)
+        console.log("delivery completed")
+
+       if(isFinalLeg){
+            socket.emit('delivery_completed',{orderId,riderId})
+        }
+        resolve()
+    }
+        
+    },stepDuration)
+
+    })
+}
+
+function moveRiderStepByStep(startcoords,endcoords,riderMarker,map,latStep,
+lngStep,currentStep,totalSteps, orderId,riderId){
+
+    const newLat= startcoords[0]+(latStep*currentStep)
+    const newLng= startcoords[1]+(lngStep*currentStep)
+
+    riderMarker.setLatLng([newLat,newLng])
+
+     if (currentStep % 5 === 0 ){
+                socket.emit('rider_location_update',{
+                    orderId,
+                    riderId,
+                    location: [newLat,newLng],
+                    timestamp: new Date()
+
+                })
+               }
+
+    const progress= (currentStep/totalSteps) * 100
+    console.log(`rider progress: ${progress.toFixed(1)}% `)
+
+    if(currentStep %10 === 0){
+        map.panTo([newLat,newLng])
+    }
+
+    const distanceToDestination= calculateRealDistance(newLat,newLng,endcoords[0],endcoords[1])
+
+
+    return distanceToDestination < 0.001
+     
+}
 
 
 
