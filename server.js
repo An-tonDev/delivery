@@ -20,10 +20,10 @@ const io= socketIO(server,{
 })
 
 io.on('connection',(socket)=>{
-  console.log("scet is running "+socket.id)
+  console.log("socket is running "+socket.id)
 
   socket.on('join_order', ({orderId,role})=>{
-    socket.join(`order ${orderId}`)
+    socket.join(`order_${orderId}`)
     socket.role=role
     console.log(`${role} joined order ${orderId} room`)
   })

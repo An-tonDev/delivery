@@ -1,4 +1,5 @@
 console.log("js file loaded")
+
 let map;
 let customerLocation=null;
 let riderLocation=null;
@@ -6,7 +7,6 @@ let destination=null;
 let customerMarker=null
 let destinationMarker=null
 let riderMarker=null
-let isFinalLeg=true
 
 const socket= io('http://localhost:32000')
 
@@ -15,9 +15,6 @@ socket.on('connect', ()=>{
 console.log("connected to the rt tracking server")
     
 console.log('socket connected?', socket.connected)
-
-
-socket.emit('test', { message: 'Hello from frontend!' })
 
 })
 
@@ -168,12 +165,12 @@ async function Delivery(order){
     })
 
        await simulateRiderMovement([riderLocation.lat,riderLocation.lng],customerLocation,
-        map,riderMarker,order._id,riderId)
+        map,riderMarker,order._id,riderId,false)
 
         showMessage(" delivery item picked, going to destination")
 
         await simulateRiderMovement(customerLocation, [destination.lat,destination.lng],
-        map,riderMarker,order._id,riderId,isFinalLeg)
+        map,riderMarker,order._id,riderId,true)
 
         showMessage("delivery")
 
@@ -183,7 +180,6 @@ async function Delivery(order){
 
 
 document.getElementById('placeOrder').addEventListener('click',function(){
-
     document.getElementById('placeOrder').style.display='none'
     document.getElementById('orderForm').style.display='block'
 })
@@ -267,7 +263,7 @@ document.getElementById('submitOrder').addEventListener('click', async function(
                 
                 if (response.ok) {
                     showMessage('Order created! Assigning rider...');
-                    // Call Delivery function with the created order
+            
                     Delivery(result.data.order);
                 } else {
                     showMessage('error: ' + (result.message || 'Failed to create order'));
@@ -344,7 +340,7 @@ function simulateRiderMovement(startcoords,endcoords, map, riderMarker,orderId,r
 
     if(hasArrived || currentStep>=totalSteps){
         clearInterval(animationInterval)
-        console.log("delivery completed")
+        console.log("simulation completed")
 
        if(isFinalLeg){
             socket.emit('delivery_completed',{orderId,riderId})
@@ -377,6 +373,7 @@ lngStep,currentStep,totalSteps, orderId,riderId){
 
     const progress= (currentStep/totalSteps) * 100
     console.log(`rider progress: ${progress.toFixed(1)}% `)
+    
 
     if(currentStep %10 === 0){
         map.panTo([newLat,newLng])
