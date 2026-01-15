@@ -3,10 +3,12 @@ const morgan =require('morgan')
 const cors=require('cors')
 const {globalErrorHandler}=require('./controllers/errorController')
 const app=express()
-const userRouter=require('./routes/userRoutes')
-const orderRouter=require('./routes/orderRoutes')
+const userRoutes=require('./routes/userRoutes')
+const orderRoutes=require('./routes/orderRoutes')
+const webhookRoutes= require('./routes/webhookroutes')
 
 
+app.use('api/v1/webhook/paystack',express.raw({type:'application/json'}))
 app.use(express.json())
 
 app.use(cors())
@@ -17,8 +19,9 @@ if(process.env.NODE_ENV === 'development'){
 
 
 
-app.use('/api/v1/users',userRouter)
-app.use('/api/v1/orders',orderRouter)
+app.use('/api/v1/users',userRoutes)
+app.use('/api/v1/orders',orderRoutes)
+app.use('/api/v1/webhook',webhookRoutes)
 
 const catchAllHandler = (req, res) => {
   res.status(404).json({

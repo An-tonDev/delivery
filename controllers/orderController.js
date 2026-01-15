@@ -3,6 +3,7 @@ const User=require('../models/userModel')
 const catchAsync=require('../utils/catchAsync')
 const {AppError,NotFoundError}=require('../utils/appError')
 const ApiFeatures=require('../utils/apiFeatures')
+const paystack= require('../utils/paystack')
 
 
 exports.getOrders=catchAsync (async(req,res,next)=>{
@@ -149,61 +150,19 @@ exports.geocodeAddress = catchAsync (async (req, res, next) => {
   }
 })
 
+exports.initializePayment= catchAsync(async(req,res)=>{
 
-/* //examples for learning about socket.io
+    const {email,amount,orderId} =req.body
 
-socket.emit('rider_moved',{position:[6.5280,3.3794]})
+    const response= await paystack.post('/transaction/initialize',{
+        email,
+        amount: amount*100,
+        reference: `order_${orderId}_${Date.now()}`
+    })
 
-socket.on('rider_moved',(data)=>{
-    updateMap(data.position)
+    res.status(200).json({
+        status: "success",
+        data: response.data.data
+    })
+
 })
-
-//rooms
-socket.join('rider-123')
-
-//code for creating an order room for a customer to monitor in real time
-socket.join('order_45')
-io.to('order_45').emit('locationUpdated',newPosition)
-
-
-// On rider's phone
-function sendLocationUpdate(position) {
-    socket.emit('rider_location_update', {
-        riderId: 'rider_123',
-        orderId: 'order_456',
-        position: position,
-        timestamp: new Date()
-    });
-}
-
-// Send every 5 seconds when moving
-setInterval(() => {
-    if (isDelivering) {
-        navigator.geolocation.getCurrentPosition(sendLocationUpdate);
-    }
-}, 5000);
-
-socket.on('rider_location_update', (data) => {
-    //  Update rider's location in database
-    updateRiderLocation(data.riderId, data.position);
-    
-    // Tell everyone tracking this order
-    io.to(`order_${data.orderId}`).emit('rider_moved', {
-        position: data.position,
-        riderId: data.riderId,
-        timestamp: data.timestamp
-    });
-    
-    // Check if rider is close to destination
-    checkDeliveryProximity(data.orderId, data.position);
-});
-
-// On customer's phone/computer
-socket.on('rider_moved', (data) => {
-    // Update the map in real-time!
-    riderMarker.setLatLng(data.position);
-    map.panTo(data.position);
-    
-    // Update ETA
-    updateETA(data.position);
-}); */

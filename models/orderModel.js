@@ -11,6 +11,11 @@ const orderSchema= new mongoose.Schema(
         required:true,
         default:"placed_order"
     },
+    paymentReference: {
+        type: String,
+        unique: true,
+        sparse: true
+    },
     sender:{
         type: mongoose.Schema.ObjectId,
         ref:'User'

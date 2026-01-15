@@ -7,6 +7,7 @@ const router=express.Router()
 
 
 router.get('/geocode', orderController.geocodeAddress)
+router.post('/pay',orderController.initializePayment)
 
 router
 .route('/')
