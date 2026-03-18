@@ -1,3 +1,4 @@
+
 console.log("js file loaded")
 
 let map;
@@ -7,6 +8,9 @@ let destination=null;
 let customerMarker=null
 let destinationMarker=null
 let riderMarker=null
+let calculatedPrice = null;
+let dropoffCoords = null;
+let orderData = null;
 
 const socket= io('http://localhost:32000')
 
@@ -33,7 +37,126 @@ socket.on('delivery_success', (data) => {
   console.log('Delivery finished:', data);
 });
 
+//polling logic
+ window.addEventListener('load',async ()=>{
+     const pendingOrderId=localStorage.getItem('pendingOrderId')
+     const paymentReference= localStorage.getItem('paymentReference')
 
+     const urlParams= new URLSearchParams(window.location.search)
+     const urlReference= urlParams.get('reference')
+      
+     if(pendingOrderId || urlReference){
+        const referenceToCheck= urlReference || paymentReference
+        showMessage("checking payment status...")
+
+      try{
+           const response= await fetch(
+            `http://localhost:32000/api/v1/orders?paymentReference=${referenceToCheck}`
+        )
+             const result= await response.json()
+
+            if(result.data.doc && result.data.doc.length>0){
+                const order= result.data.doc[0]
+
+                if(order.status === 'order_assigned' && order.rider){
+                    showMessage("starting delivery")
+                    await startDeliveryForOrder(order)
+                    return
+                }
+            }
+       }catch(error){
+             console.log("initial check failed will wait for socket event")
+       }
+
+
+       const handleOrderAssigned= async(data)=>{
+            if(data.orderId === pendingOrderId){
+               console.log("rider assigned via socket")
+               clearTimeout(fallbackTimeout)
+               socket.off('order_assigned',handleOrderAssigned)
+
+           try{
+               const response= await fetch(`http://localhost:32000/api/v1/orders/${data.orderId}`)
+               const result= await response.json()
+               if(response.ok){
+                    await startDeliveryForOrder(result.data.order)
+                  }
+           }catch(error){
+                  console.error("unable to fetch order")
+                  showMessage(" error starting delivery, please refresh")
+           } 
+           }
+       }
+
+           socket.on('order_assigned', handleOrderAssigned)
+
+
+        const fallbackTimeout=setTimeout(async ()=>{
+               console.log("checking manually, 40 secs has passed")
+
+               socket.off('order_assigned',handleOrderAssigned)
+
+               try{
+                  const response= await fetch(
+                    `http://localhost:32000/api/v1/orders?paymentReference=${referenceToCheck}`
+                )
+                  const result = await response.json()
+                    if(result.data.doc && result.data.doc.length>0){
+                        const order=result.data.doc[0]
+
+                        if(order.status==='order_assigned' && order.rider){
+                             await startDeliveryForOrder(order)
+                        }else{
+                            showMessage("still waiting to find a rider,you will be notified soon")
+                        }
+                    }else{
+                        showMessage("please refresh to check order status")
+                    }
+            
+               }catch(error){
+                    showMessage("error checking order, please refresh")
+               }
+        },40000)
+
+     }
+
+ })
+
+async function startDeliveryForOrder(order){
+   console.log("starting delivery tracking for order ",order._id)
+     localStorage.removeItem('pendingOrderId')
+     localStorage.removeItem('paymentReference')
+
+    const savedLat=localStorage.getItem('customerLat')
+    const savedLng=localStorage.getItem('customerLng')
+
+    if(savedLat && savedLng){
+        customerLocation=[parseFloat(savedLat),parseFloat(savedLng)]
+           localStorage.removeItem('customerLat')
+         localStorage.removeItem('customerLng')
+    }else{
+        customerLocation=[
+        order.senderLocation.coordinates[1],
+        order.senderLocation.coordinates[0]
+    ]
+    }
+     document.getElementById('mapContainer').style.display='block'
+     if(!map){
+        initMap()
+     }
+
+     if(customerMarker){
+        map.removeLayer(customerMarker)
+     }
+     customerMarker=L.marker(customerLocation)
+     .addTo(map)
+     .bindPopup('your location')
+     .openPopup()
+
+     map.setView(customerLocation,15)
+      showMessage("started delivery tracking")
+      await Delivery(order)
+}
 
 function initMap() {
     try{
@@ -99,18 +222,6 @@ async function fetchRiderData(riderId){
 }
 
 
-async function convertAddressToCoordinates(address){
-    try{
-        const response= await fetch(
-            `http://localhost:32000/api/v1/orders/geocode?address=${encodeURIComponent(address)}`
-        )
-         return await response.json()
-         
-    }catch(error){
-        console.error("unable to get the destination coords",error)
-    }
-}
-
 async function Delivery(order){
      console.log("Processing delivery for order:", order);
 
@@ -121,7 +232,10 @@ async function Delivery(order){
     
     const riderId=order.rider
 
-    destination= await convertAddressToCoordinates(order.destination)
+    destination={
+       lat: order.dropoffLocation.coordinates[1],
+       lng: order.dropoffLocation.coordinates[0]
+    }
 
     if(!destination) return showMessage('destination not available')
         
@@ -158,11 +272,6 @@ async function Delivery(order){
         console.log("showing delivery")
 
         showMessage("going to customer location")
-            
-        socket.emit('join_order',{
-        orderId:order._id,
-        role:'rider'
-    })
 
        await simulateRiderMovement([riderLocation.lat,riderLocation.lng],customerLocation,
         map,riderMarker,order._id,riderId,false)
@@ -187,28 +296,28 @@ document.getElementById('placeOrder').addEventListener('click',function(){
 document.getElementById('submitOrder').addEventListener('click', async function() {
 
     // Get form data
-    const orderData = {
+ orderData = {
         name: document.getElementById('orderName').value,
         recipientPhoneNo: document.getElementById('recipientPhone').value,
         destination: document.getElementById('deliveryAddress').value,
         transportPIN: document.getElementById('pickupPin').value,
     };
-    
-    // Validate form
-    if (!orderData.destination || !orderData.name) {
-        showMessage("error: Please fill in all required fields");
-        return;
+
+    const requiredFields = [ 'destination','name', 'recipientPhoneNo', 'transportPIN'];
+    const hasEmptyField = requiredFields.some(field => !orderData[field]);
+
+    if (hasEmptyField) {
+    showMessage("Error: Please fill in all required fields");
+    return;
     }
     
     document.getElementById('orderForm').style.display = 'none';
     document.getElementById('mapContainer').style.display = 'block';
     
- if(!map){
-    initMap();
- }
-    
+    if(!map) initMap();
+  
     if (!navigator.geolocation) {
-        showMessage("error: Browser does not support location which is needed to make an order");
+        showMessage("error: Browser does not support location");
         return;
     }
     
@@ -235,44 +344,40 @@ document.getElementById('submitOrder').addEventListener('click', async function(
             // Center map on customer
             map.setView(customerLocation, 15);
             
-            showMessage("Creating your order...");
-            
-            // Create the order
-            try {
-                const requestData = {
-                    senderLocation: {
-                        type: "Point",
-                        coordinates: [
-                            customerLocation[1], // Longitude (lng)
-                            customerLocation[0]  // Latitude (lat)
-                        ]
-                    },
-                    ...orderData
-                };
-                
-                console.log("Sending order data:", requestData);
-                
-                const response = await fetch('http://localhost:32000/api/v1/orders', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(requestData)
-                });
-                
-                const result = await response.json();
-                console.log("Order creation response:", result);
-                
-                if (response.ok) {
-                    showMessage('Order created! Assigning rider...');
-            
-                    Delivery(result.data.order);
-                } else {
-                    showMessage('error: ' + (result.message || 'Failed to create order'));
+            showMessage("Calculating delivery price...");
+
+            try{
+                const priceResponse= await fetch('http://localhost:32000/api/v1/orders/calculate-price',{
+                      method:'POST',
+                      headers:{'Content-Type':'application/json'},
+                      body:JSON.stringify({
+                        customerLocation,
+                        dropoffAddress: orderData.destination
+                      })
+                })
+
+                const priceResult= await priceResponse.json()
+
+              if (!priceResponse.ok) {
+                    showMessage('error: ' + (priceResult.message || 'Could not calculate price'));
+                    return;
+                   }
+
+                   calculatedPrice=priceResult.data.totalPrice
+                   dropoffCoords=priceResult.data.dropoffCoords
+
+                   document.getElementById('distanceText').textContent= priceResult.data.distanceInKm;
+                   document.getElementById('priceText').textContent= calculatedPrice.toLocaleString('en-NG',{
+                    style:'currency',
+                    currency: 'NGN'
+                   });
+                   document.getElementById('priceDisplay').style.display= 'block';
+                   
+                   showMessage("review your delivery price")
+                }catch(error){
+                    console.error('price calculation error:',error)
+                    showMessage("could not calculate price-" + error.message)
                 }
-                
-            } catch(error) {
-                console.error("Order creation error:", error);
-                showMessage("error: Unable to place order - " + error.message);
-            }
         },
         handleError,
         {
@@ -283,9 +388,72 @@ document.getElementById('submitOrder').addEventListener('click', async function(
     );
 });
 
+//if customer clicks pay now
+document.getElementById('confirmPayment').addEventListener('click',async function(){
+   
+    showMessage("creating order now")
+    document.getElementById('priceDisplay').style.display= 'none';
+
+            try {
+                const requestData = {
+                    senderLocation: {
+                        type: "Point",
+                        coordinates: [
+                            customerLocation[1], // Longitude (lng)
+                            customerLocation[0]  // Latitude (lat)
+                        ]
+                    },
+                    dropoffCoords,
+                    totalPrice: calculatedPrice,
+                    ...orderData
+                };
+                    
+                const response = await fetch('http://localhost:32000/api/v1/orders', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(requestData)
+                });
+                
+                const result = await response.json();
+                                
+                if (response.ok) {
+                     localStorage.setItem('pendingOrderId',result.data.order._id)
+                     localStorage.setItem('paymentReference', result.data.order.paymentReference)
+                     localStorage.setItem('customerLat', customerLocation[0])
+                     localStorage.setItem('customerLng', customerLocation[1])
+
+                     showMessage('redirecting to payment page')
+                     window.location.href=result.data.paymentUrl                 
+        
+                } else {
+                    showMessage('error: ' + (result.message || 'Failed to create order'));
+                }
+                
+            } catch(error) {
+                console.error("Order creation error:", error);
+                showMessage("error: Unable to place order - " + error.message);
+            }
+})
+
+//if customer cancels order
+document.getElementById('cancelOrder').addEventListener('click', function () {
+    document.getElementById('priceDisplay').style.display = 'none';
+    document.getElementById('orderForm').style.display = 'block';
+    calculatedPrice = null;
+    orderData = null;
+});
 
 
-//rider simulation helper functions
+
+
+
+
+
+
+
+
+
+
 
 
 

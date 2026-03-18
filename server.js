@@ -38,14 +38,15 @@ socket.on('delivery_completed', (data) => {
     io.to(`order_${data.orderId}`).emit('delivery_success', data);
 });
   
-  socket.on('disconnect',()=>{
+socket.on('disconnect',()=>{
     console.log("socket is disconnected "+socket.id)
-  })
-
 })
 
+})
 
 
 server.listen(port,()=>{
     console.log("socket + app is running on " +port)
 })
+
+module.exports={io}

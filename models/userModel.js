@@ -1,8 +1,6 @@
 const mongoose= require('mongoose')
 const bcrypt= require('bcrypt')
 const crypto= require('crypto');
-const { validate } = require('./orderModel');
-
 
 const userSchema= new mongoose.Schema(
     {
@@ -78,7 +76,7 @@ const userSchema= new mongoose.Schema(
        address:String,
        updatedAt:{
         type:Date,
-        default: Date.now
+        default: Date.now()
        }
      },
      passwordResetToken: String,

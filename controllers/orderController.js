@@ -1,5 +1,4 @@
 const Order=require('../models/orderModel')
-const User=require('../models/userModel')
 const catchAsync=require('../utils/catchAsync')
 const {AppError,NotFoundError}=require('../utils/appError')
 const ApiFeatures=require('../utils/apiFeatures')
@@ -64,105 +63,96 @@ exports.deleteOrder=catchAsync (async(req,res,next)=>{
 
 exports.createOrder = catchAsync(async(req, res, next) => {
     
-    const { senderLocation, ...orderData } = req.body;
+    const { senderLocation,dropoffCoords,totalPrice, ...orderData } = req.body;
     
     if (!senderLocation || !senderLocation.coordinates) {
         return next(new AppError('Sender location is required', 400));
     }
-    
-    // Get coordinates from GeoJSON object
-    const [lng, lat] = senderLocation.coordinates;
-    
-     //Create GeoJSON point for query
-    const customerLocation = {
-        type: 'Point',
-        coordinates: [parseFloat(lng), parseFloat(lat)] 
-    };
-    
-
-    const order = await Order.create(orderData);
-    
-     
-    const nearByRiders = await User.find({
-        role: 'rider',
-        isAvailable: true,
-        location: {
-            $near: {
-                $geometry: customerLocation,
-                $maxDistance: 12000
-            }
-        }
-    }).sort({ rating: -1 }).limit(3);
-    
-   
-    if (!nearByRiders || nearByRiders.length === 0) {
-        return next(new NotFoundError(" available riders near your location", 404));
+    if (!dropoffCoords) {
+        return next(new AppError('Sender location is required', 400));
+    }
+      
+    if(!totalPrice){
+      return next(new AppError('totalprice is needed',400))
     }
     
-    //Assign rider
-    const rider = nearByRiders[0];
-    order.rider = rider._id;
-    order.status = "order_assigned";
-    await order.save();
-    
- 
-    res.status(201).json({
-        status: "success",
-        message: `Rider ${rider.username} assigned to your order`,
-        data: { order}
+    const order = await Order.create({
+      ...orderData,
+      senderLocation,
+      dropoffLocation:{
+        type:'Point',
+        coordinates:[dropoffCoords.lng,dropoffCoords.lat]
+      },
+      totalPrice,
+      status: 'pending'
     });
+    
+    const paymentReference=`order_${order._id}_${Date.now()}`
+    order.paymentReference=paymentReference
+    await order.save()
+     
+    const paystackResponse= await paystack.post('/transaction/initialize/',{
+      email: req.user.email,
+      amount: totalPrice*100,
+      reference: paymentReference
+    })
+
+    res.status(201).json({
+      status:'success',
+      data:{
+        order,
+        paymentUrl: paystackResponse.data.data.authorization_url
+      }
+    })
+
 });
 
 
-exports.geocodeAddress = catchAsync (async (req, res, next) => {
-  try {
-    const { address } = req.query;
+exports.calculateDeliveryPrice = catchAsync (async (req, res, next) => {
+    const { pickupCoords,dropoffAddress } = req.query;
 
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search` +
-      `?q=${encodeURIComponent(address)}` +
-      `&format=json` +
-      `&limit=1` +
-      `&countrycodes=ng`,
-      {
-        headers: {
-          'User-Agent': 'delivery-app'
-        }
-      }
+      `?q=${encodeURIComponent(dropoffAddress)}` +
+      `&format=json` +`&limit=1` +`&countrycodes=ng`,
+      {headers: {'User-Agent': 'delivery-app' }}
     );
 
     const data = await response.json();
 
     if (!data.length) {
-      return res.status(404).json({
-        status: 'fail',
-        message: 'Address not found'
-      });
+      return next(new AppError("destination address not found",404))
     }
 
-    res.status(200).json({
+   const dropoffCoords={  
       lat: parseFloat(data[0].lat),
       lng: parseFloat(data[0].lon)
-    });
+    }
 
-  } catch (err) {
-    next(err);
-  }
+    const R = 6371;
+    const dLat = (dropoffCoords.lat - pickupCoords.lat) * Math.PI / 180;
+    const dLng = (dropoffCoords.lng - pickupCoords.lng) * Math.PI / 180;
+
+    const a =
+        Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(pickupCoords.lat * Math.PI / 180) *
+        Math.cos(dropoffCoords.lat * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distanceInKm = R * c;
+
+     const basePrice=400
+     const pricePerKm=100
+     const totalPrice= Math.round(basePrice + (pricePerKm * distanceInKm))
+
+     res.status(200).json({
+      status:'success',
+      data:{
+        distanceInKm: distanceInKm.toFixed(2),
+        totalPrice,
+        dropoffCoords
+      }
+     })
 })
 
-exports.initializePayment= catchAsync(async(req,res)=>{
-
-    const {email,amount,orderId} =req.body
-
-    const response= await paystack.post('/transaction/initialize',{
-        email,
-        amount: amount*100,
-        reference: `order_${orderId}_${Date.now()}`
-    })
-
-    res.status(200).json({
-        status: "success",
-        data: response.data.data
-    })
-
-})
