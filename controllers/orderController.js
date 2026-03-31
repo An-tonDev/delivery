@@ -6,14 +6,14 @@ const paystack= require('../utils/paystack')
 
 
 exports.getOrders=catchAsync (async(req,res,next)=>{
-
+     console.log("query params",req.query)
     const features=new ApiFeatures(Order.find(),req.query)
     .filter()
     .sort()
     .limitFields()
     .paginate()
     const doc= await features.query
-        
+          console.log("order",doc)
      
         res.status(200).json({
             status:"success",
@@ -23,8 +23,7 @@ exports.getOrders=catchAsync (async(req,res,next)=>{
 })
 
 exports.getOrder=catchAsync (async(req,res,next)=>{
-        
-    const order= await Order.findById(req.params.id)
+   const order= await Order.findById(req.params.id)
 
      if(!order){
         return next(new NotFoundError('order'))
@@ -36,7 +35,6 @@ exports.getOrder=catchAsync (async(req,res,next)=>{
 })
 
 exports.updateOrder=catchAsync (async(req,res,next)=>{
-        
     const order= await Order.findByIdAndUpdate(req.params.id,req.body)
      if(!order){
         return next(new NotFoundError('order'))
@@ -47,8 +45,7 @@ exports.updateOrder=catchAsync (async(req,res,next)=>{
         })
 })
 
-exports.deleteOrder=catchAsync (async(req,res,next)=>{
-        
+exports.deleteOrder=catchAsync (async(req,res,next)=>{   
     const order= await Order.findByIdAndDelete(req.params.id)
 
     if(!order){
@@ -62,7 +59,6 @@ exports.deleteOrder=catchAsync (async(req,res,next)=>{
 })
 
 exports.createOrder = catchAsync(async(req, res, next) => {
-    
     const { senderLocation,dropoffCoords,totalPrice, ...orderData } = req.body;
     
     if (!senderLocation || !senderLocation.coordinates) {
@@ -86,15 +82,16 @@ exports.createOrder = catchAsync(async(req, res, next) => {
       totalPrice,
       status: 'pending'
     });
-    
     const paymentReference=`order_${order._id}_${Date.now()}`
     order.paymentReference=paymentReference
     await order.save()
-     
+
+     console.log("order:",order)
     const paystackResponse= await paystack.post('/transaction/initialize/',{
-      email: req.user.email,
+      email: orderData.email,
       amount: totalPrice*100,
-      reference: paymentReference
+      reference: paymentReference,
+      callback_url:'http://localhost:5500/public/success.html'
     })
 
     res.status(201).json({
@@ -109,19 +106,30 @@ exports.createOrder = catchAsync(async(req, res, next) => {
 
 
 exports.calculateDeliveryPrice = catchAsync (async (req, res, next) => {
-    const { pickupCoords,dropoffAddress } = req.query;
+    const { pickupCoords,dropoffAddress } = req.body;
 
     const response = await fetch(
       `https://nominatim.openstreetmap.org/search` +
-      `?q=${encodeURIComponent(dropoffAddress)}` +
+      `?q=${encodeURIComponent(dropoffAddress + ", Nigeria")}` +
       `&format=json` +`&limit=1` +`&countrycodes=ng`,
-      {headers: {'User-Agent': 'delivery-app' }}
+      {headers: {'User-Agent': 'delivery-app' },
+      signal: AbortSignal.timeout(7000)
+    }
     );
 
     const data = await response.json();
+    console.log("nominatim response:",data)
 
     if (!data.length) {
-      return next(new AppError("destination address not found",404))
+      res.status(200).json({
+        status:'fallback',
+        message:'destination not found redirecting to lagos center',
+        data:{
+          distanceInKm:7,
+          totalPrice:1200,
+          dropoffCoords: { lat: 6.5244, lng: 3.3792 } 
+        }
+      })
     }
 
    const dropoffCoords={  

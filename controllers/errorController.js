@@ -1,5 +1,4 @@
 const notFound = (req, res, next) => {
-  // Simple 404 handler without importing AppError
   res.status(404).json({
     status: 'fail',
     message: `Route ${req.originalUrl} not found`

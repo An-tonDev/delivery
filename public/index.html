@@ -4,9 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
-     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
-     crossorigin=""/>
      <link rel="stylesheet" href="index.css">
      
 </head>
@@ -19,15 +16,18 @@
             
             <label>Order name:</label>
             <input type="text" id="orderName" placeholder="Who's receiving?">
+
+            <label>Email:</label>
+            <input type="email" id="email" placeholder="yoour email">
             
             <label>Recipient Phone:</label>
             <input type="tel" id="recipientPhone" placeholder="Phone number">
             
             <label>Destination :</label>
-            <textarea id="deliveryAddress" placeholder="Full delivery address"></textarea>
+            <textarea id="deliveryAddress" placeholder="Delivery address in full"></textarea>
             
             <label>Transport PIN (4 digits):</label>
-            <input type="password" id="pickupPin" maxlength="4" placeholder="1234">
+            <input type="password" id="pickupPin" maxlength="4" placeholder="four digits PIN">
 
             <button id="submitOrder">Request Delivery</button>
         </div>
@@ -42,17 +42,8 @@
         <button id="confirmPayment">Pay Now</button>
         <button id="cancelOrder">Cancel</button>
     </div>
-
-    <div id="mapContainer" style="display: none;">
-                 
-        <div id="map"></div>
-        <div id="locationStatus"></div>
-
-    </div>
+    <div id="locationStatus"></div>
     
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-     integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
-     crossorigin=""></script>
      <script src="http://localhost:32000/socket.io/socket.io.js"></script>
     <script src="./index.js"></script>
 </body>

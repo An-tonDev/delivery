@@ -1,5 +1,7 @@
 
 console.log("js file loaded")
+console.log(localStorage.getItem('pendingOrderId'))
+console.log(localStorage.getItem('paymentreference'))
 
 let map;
 let customerLocation=null;
@@ -11,6 +13,7 @@ let riderMarker=null
 let calculatedPrice = null;
 let dropoffCoords = null;
 let orderData = null;
+let deliveryInProgress=false;
 
 const socket= io('http://localhost:32000')
 
@@ -41,13 +44,16 @@ socket.on('delivery_success', (data) => {
  window.addEventListener('load',async ()=>{
      const pendingOrderId=localStorage.getItem('pendingOrderId')
      const paymentReference= localStorage.getItem('paymentReference')
+     const locallocation=[localStorage.getItem('customerLat'),localStorage.getItem('customerLng')]
 
      const urlParams= new URLSearchParams(window.location.search)
      const urlReference= urlParams.get('reference')
       
-     if(pendingOrderId || urlReference){
+     if((pendingOrderId || urlReference) && !deliveryInProgress){
         const referenceToCheck= urlReference || paymentReference
+        console.log(referenceToCheck)
         showMessage("checking payment status...")
+        deliveryInProgress=true
 
       try{
            const response= await fetch(
@@ -60,7 +66,7 @@ socket.on('delivery_success', (data) => {
 
                 if(order.status === 'order_assigned' && order.rider){
                     showMessage("starting delivery")
-                    await startDeliveryForOrder(order)
+                    await startDeliveryForOrder(order,locallocation)
                     return
                 }
             }
@@ -79,7 +85,7 @@ socket.on('delivery_success', (data) => {
                const response= await fetch(`http://localhost:32000/api/v1/orders/${data.orderId}`)
                const result= await response.json()
                if(response.ok){
-                    await startDeliveryForOrder(result.data.order)
+                    await startDeliveryForOrder(result.data.order,locallocation)
                   }
            }catch(error){
                   console.error("unable to fetch order")
@@ -105,7 +111,7 @@ socket.on('delivery_success', (data) => {
                         const order=result.data.doc[0]
 
                         if(order.status==='order_assigned' && order.rider){
-                             await startDeliveryForOrder(order)
+                             await startDeliveryForOrder(order,locallocation)
                         }else{
                             showMessage("still waiting to find a rider,you will be notified soon")
                         }
@@ -116,31 +122,35 @@ socket.on('delivery_success', (data) => {
                }catch(error){
                     showMessage("error checking order, please refresh")
                }
-        },40000)
+        },25000)
 
      }
 
  })
 
-async function startDeliveryForOrder(order){
+async function startDeliveryForOrder(order,locallocation){
    console.log("starting delivery tracking for order ",order._id)
+
      localStorage.removeItem('pendingOrderId')
      localStorage.removeItem('paymentReference')
+     localStorage.removeItem('customerLat')
+     localStorage.removeItem('customerLng')
 
-    const savedLat=localStorage.getItem('customerLat')
-    const savedLng=localStorage.getItem('customerLng')
+    const savedLat=locallocation[0]
+    const savedLng=locallocation[1]
 
     if(savedLat && savedLng){
         customerLocation=[parseFloat(savedLat),parseFloat(savedLng)]
-           localStorage.removeItem('customerLat')
-         localStorage.removeItem('customerLng')
     }else{
         customerLocation=[
         order.senderLocation.coordinates[1],
         order.senderLocation.coordinates[0]
     ]
     }
-     document.getElementById('mapContainer').style.display='block'
+     const mapContainer=document.getElementById('mapContainer')
+     if(mapContainer){
+        mapContainer.style.display='block'
+     }
      if(!map){
         initMap()
      }
@@ -180,6 +190,10 @@ function initMap() {
 
 function showMessage(message){
      const statusDiv=document.getElementById('locationStatus')
+     if(!statusDiv){
+        console.warn("location status element not found")
+        return
+     }
      statusDiv.innerHTML=message
      statusDiv.style.color= message.startsWith('error') ? 'red' :'grey'
 }
@@ -282,22 +296,27 @@ async function Delivery(order){
         map,riderMarker,order._id,riderId,true)
 
         showMessage("delivery")
+        localStorage.clear()
 
 }
 
 
 
-
-document.getElementById('placeOrder').addEventListener('click',function(){
-    document.getElementById('placeOrder').style.display='none'
+const placeOrder=document.getElementById('placeOrder')
+if(placeOrder)
+    placeOrder.addEventListener('click',function(){
+    placeOrder.style.display='none'
     document.getElementById('orderForm').style.display='block'
 })
 
-document.getElementById('submitOrder').addEventListener('click', async function() {
+const submitOrder=document.getElementById('submitOrder')
+   if(submitOrder){
+  submitOrder.addEventListener('click', async function() {
 
     // Get form data
  orderData = {
         name: document.getElementById('orderName').value,
+        email:document.getElementById('email').value,
         recipientPhoneNo: document.getElementById('recipientPhone').value,
         destination: document.getElementById('deliveryAddress').value,
         transportPIN: document.getElementById('pickupPin').value,
@@ -312,16 +331,12 @@ document.getElementById('submitOrder').addEventListener('click', async function(
     }
     
     document.getElementById('orderForm').style.display = 'none';
-    document.getElementById('mapContainer').style.display = 'block';
-    
-    if(!map) initMap();
-  
+ 
     if (!navigator.geolocation) {
         showMessage("error: Browser does not support location");
         return;
     }
     
-    // Get customer location
     navigator.geolocation.getCurrentPosition(
         async (position) => {
             const coordinates = {
@@ -332,18 +347,6 @@ document.getElementById('submitOrder').addEventListener('click', async function(
             
             customerLocation = [coordinates.lat, coordinates.lng];
             
-            // Create/update customer marker
-            if (customerMarker) {
-                map.removeLayer(customerMarker);
-            }
-            customerMarker = L.marker(customerLocation)
-                .addTo(map)
-                .bindPopup('Your location')
-                .openPopup();
-            
-            // Center map on customer
-            map.setView(customerLocation, 15);
-            
             showMessage("Calculating delivery price...");
 
             try{
@@ -351,7 +354,10 @@ document.getElementById('submitOrder').addEventListener('click', async function(
                       method:'POST',
                       headers:{'Content-Type':'application/json'},
                       body:JSON.stringify({
-                        customerLocation,
+                        pickupCoords:{
+                            lat: customerLocation[0],
+                            lng: customerLocation[1]
+                        },
                         dropoffAddress: orderData.destination
                       })
                 })
@@ -387,9 +393,11 @@ document.getElementById('submitOrder').addEventListener('click', async function(
         }
     );
 });
-
+   }
 //if customer clicks pay now
-document.getElementById('confirmPayment').addEventListener('click',async function(){
+ const confirmPayment=document.getElementById('confirmPayment')
+ if(confirmPayment){
+   confirmPayment.addEventListener('click',async function(){
    
     showMessage("creating order now")
     document.getElementById('priceDisplay').style.display= 'none';
@@ -399,8 +407,8 @@ document.getElementById('confirmPayment').addEventListener('click',async functio
                     senderLocation: {
                         type: "Point",
                         coordinates: [
-                            customerLocation[1], // Longitude (lng)
-                            customerLocation[0]  // Latitude (lat)
+                            customerLocation[1], 
+                            customerLocation[0]
                         ]
                     },
                     dropoffCoords,
@@ -434,52 +442,31 @@ document.getElementById('confirmPayment').addEventListener('click',async functio
                 showMessage("error: Unable to place order - " + error.message);
             }
 })
-
+ }
 //if customer cancels order
-document.getElementById('cancelOrder').addEventListener('click', function () {
+const cancelOrder=document.getElementById('cancelOrder')
+if(cancelOrder){
+  cancelOrder.addEventListener('click', function () {
     document.getElementById('priceDisplay').style.display = 'none';
     document.getElementById('orderForm').style.display = 'block';
     calculatedPrice = null;
     orderData = null;
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function calculateRealDistance(lat1, lng1, lat2, lng2) {
-    // Earth's radius 
-    const R = 6371;
-    
-    // Convert degrees to radians
-    const dLat = toRadians(lat2 - lat1);
-    const dLng = toRadians(lng2 - lng1);
-    
-    // Haversine formula
-    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
-              Math.sin(dLng/2) * Math.sin(dLng/2);
-    
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-    const distance = R * c; // Distance in kilometers
-    
-    return distance;
 }
 
-function toRadians(degrees) {
-    return degrees * (Math.PI / 180);
-}
 
+
+
+
+
+
+
+
+
+
+
+
+//simulation part
 
 function simulateRiderMovement(startcoords,endcoords, map, riderMarker,orderId,riderId,isFinalLeg){
     return new Promise((resolve)=>{
@@ -554,6 +541,25 @@ lngStep,currentStep,totalSteps, orderId,riderId){
      
 }
 
+function calculateRealDistance(lat1, lng1, lat2, lng2) {
+    const R = 6371; // Earth's radius in km
+    
+    const dLat = toRadians(lat2 - lat1);
+    const dLng = toRadians(lng2 - lng1);
+    
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+              Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) *
+              Math.sin(dLng/2) * Math.sin(dLng/2);
+    
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const distance = R * c;
+    
+    return distance;
+}
+
+function toRadians(degrees) {
+    return degrees * (Math.PI / 180);
+}
 
 
 

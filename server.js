@@ -46,7 +46,9 @@ socket.on('disconnect',()=>{
 
 
 server.listen(port,()=>{
-    console.log("socket + app is running on " +port)
+    console.log("socket and app is running on " +port)
 })
+
+global.io=io
 
 module.exports={io}

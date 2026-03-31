@@ -6,11 +6,11 @@ const router=express.Router()
 //router.use('/',authController.protect)
 
 
-router.get('/calculate-price', orderController.calculateDeliveryPrice)
+router.post('/calculate-price', orderController.calculateDeliveryPrice)
 
 router
 .route('/')
-.get(authController.restrict('admin'),orderController.getOrders)
+.get(orderController.getOrders)
 .post(orderController.createOrder)
 
 router
