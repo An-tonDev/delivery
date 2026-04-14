@@ -3,9 +3,6 @@ const Order= require('../models/orderModel')
 const User=require('../models/userModel')
 
 exports.paystackWebhooks= async(req,res)=>{
-
-  console.log("webhook hit")
-
     const hash= crypto
     .createHmac('sha512',process.env.PAYSTACK_SECRET_KEY)
     .update(JSON.stringify(req.body))
@@ -16,16 +13,10 @@ exports.paystackWebhooks= async(req,res)=>{
     }
 
     const event=req.body
-    console.log("webhook received:", event.event)
-
     if(event.event === 'charge.success'){
 
         const reference= event.data.reference
-         console.log("reference:", reference)
-
         const amount= event.data.amount/100
-         console.log("amount paid", amount)
-         
        
       const order= await Order.findOne({paymentReference : reference})
 

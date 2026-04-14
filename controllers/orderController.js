@@ -13,8 +13,7 @@ exports.getOrders=catchAsync (async(req,res,next)=>{
     .limitFields()
     .paginate()
     const doc= await features.query
-          console.log("order",doc)
-     
+        
         res.status(200).json({
             status:"success",
             results: doc.length,
@@ -52,7 +51,7 @@ exports.deleteOrder=catchAsync (async(req,res,next)=>{
         return next(new NotFoundError('order'))
      }
      
-        res.status(204).json({
+       res.status(204).json({
             status:"success",
             data: null
         })
@@ -86,7 +85,6 @@ exports.createOrder = catchAsync(async(req, res, next) => {
     order.paymentReference=paymentReference
     await order.save()
 
-     console.log("order:",order)
     const paystackResponse= await paystack.post('/transaction/initialize/',{
       email: orderData.email,
       amount: totalPrice*100,
@@ -118,8 +116,6 @@ exports.calculateDeliveryPrice = catchAsync (async (req, res, next) => {
     );
 
     const data = await response.json();
-    console.log("nominatim response:",data)
-
     if (!data.length) {
       res.status(200).json({
         status:'fallback',

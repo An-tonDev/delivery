@@ -1,7 +1,5 @@
 
 console.log("js file loaded")
-console.log(localStorage.getItem('pendingOrderId'))
-console.log(localStorage.getItem('paymentreference'))
 
 let map;
 let customerLocation=null;
@@ -13,7 +11,6 @@ let riderMarker=null
 let calculatedPrice = null;
 let dropoffCoords = null;
 let orderData = null;
-let deliveryInProgress=false;
 
 const socket= io('http://localhost:32000')
 
@@ -45,6 +42,7 @@ socket.on('delivery_success', (data) => {
      const pendingOrderId=localStorage.getItem('pendingOrderId')
      const paymentReference= localStorage.getItem('paymentReference')
      const locallocation=[localStorage.getItem('customerLat'),localStorage.getItem('customerLng')]
+     const deliveryStarted=localStorage.getItem('deliveryStarted')
 
      const urlParams= new URLSearchParams(window.location.search)
      const urlReference= urlParams.get('reference')
@@ -53,7 +51,7 @@ socket.on('delivery_success', (data) => {
         const referenceToCheck= urlReference || paymentReference
         console.log(referenceToCheck)
         showMessage("checking payment status...")
-        deliveryInProgress=true
+        localStorage.setItem('deliveryStarted','true')
 
       try{
            const response= await fetch(

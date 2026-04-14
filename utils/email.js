@@ -57,7 +57,7 @@ class Email {
       <p>Reset your password here: <a href="${this.url}">${this.url}</a></p>
       <p>This token expires in 10 minutes.</p>
     `;
-    await this.sendEmail(message, "Your password reset token (valid for 10 mins)");
+    await this.sendEmail(message, `Your password reset token ${resetToken} is valid for 10 mins`);
   }
 }
 
