@@ -1,17 +1,18 @@
 const express=require('express')
 const orderController=require('../controllers/orderController')
-const authController=require('../controllers/authController')
+const {orderSchema,calculatePriceSchema}=require('../validators/orderValidator')
+const validate=require('../middleware/validate')
 const router=express.Router()
 
 //router.use('/',authController.protect)
 
 
-router.post('/calculate-price', orderController.calculateDeliveryPrice)
+router.post('/calculate-price',validate(calculatePriceSchema),orderController.calculateDeliveryPrice)
 
 router
 .route('/')
 .get(orderController.getOrders)
-.post(orderController.createOrder)
+.post(validate(orderSchema),orderController.createOrder)
 
 router
 .route('/:id')

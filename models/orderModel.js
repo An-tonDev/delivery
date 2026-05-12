@@ -19,7 +19,7 @@ const orderSchema = new mongoose.Schema(
         index:true
     },
     sender:{
-        type: mongoose.Schema.ObjectId,
+        type: mongoose.Schema.Types.ObjectId,
         ref:'User'
     },
     destination:{

@@ -1,11 +1,15 @@
 const jwt=require('jsonwebtoken')
 const catchAsync= require('../utils/catchAsync')
+const RefreshToken=require('../models/refreshTokenModel')
 const User=require('../models/userModel')
 const {AppError, NotFoundError}=require('../utils/appError')
 const crypto=require('crypto')
-const Email=require('../utils/catchAsync')
+const Email=require('../utils/email')
+const { generateAccessToken,generateRefreshToken,
+               verifyAccessToken,verifyRefreshToken,
+               saveRefreshToken,revokeRefreshToken}=require('../utils/tokenUtils')
 
-const signToken= id =>{
+/* const signToken= id =>{
     return jwt.sign({id},process.env.JWT_SECRET,{
         expiresIn: process.env.JWTEXPIRESIN
     })
@@ -28,21 +32,58 @@ const createSendToken= (user,statusCode,res)=>{
         data:{user}
     })
 }
+ */
+
+const getIpAddress= (req) =>{
+    return req.ip || req.remote.connection
+}
 
 exports.signup=catchAsync(async(req,res,next)=>{
 
-   const user= await User.create({ ...req.body})
+    const {username,email,password,passwordConfirm,role}=req.body
 
-   if(!user){
-     return next(new AppError('profile was not created',400))
-   }
-   createSendToken(user,201,res)
+    const existingUser= await User.findOne({email}) 
 
+    if(existingUser){
+        return next(new AppError('user already exists',400))
+    }
+
+    const user= await User.create({
+        username,
+        email,
+        password,
+        passwordConfirm,
+        role: role
+    })
+
+    const accessToken= generateAccessToken(user._id)
+    const refreshToken=generateRefreshToken(user._id)
+
+    await saveRefreshToken(refreshToken,user._id,getIpAddress(req))
+
+    res.cookie('refreshToken',refreshToken,{
+        httpOnly:true,
+        secure: process.env.NODE_ENV==='production',
+        sameSite:'strict',
+        maxAge:5*24*60*60*1000
+    })
+
+     res.status(200).json({
+        status:"success",
+        accessToken,
+        user:{
+            id: user._id,
+            name:user.username,
+            email:user.email,
+            role:user.role
+        }
+     })
 })
 
 exports.login= catchAsync( async(req,res,next)=>{
 
     const {username,password}=req.body
+
     if(!username || !password){
        return next(new AppError("please provide your username or password",400))
     }
@@ -52,52 +93,80 @@ exports.login= catchAsync( async(req,res,next)=>{
        return next(new AppError("incorrect email or password",401))
     }
 
-    createSendToken(user,200,res)
+    const accessToken=generateAccessToken(user._id)
+    const refreshToken=generateRefreshToken(user._id)
 
-})
+    await saveRefreshToken(refreshToken,user._id,getIpAddress(req))
 
-exports.logout=(res)=>{
-    res.cookie('jwt','loggedout',{
-        expires: Date.now()+10*1000,
+    res.cookie('refreshToken',refreshToken,{
         httpOnly:true,
-        secure: process.env.NODE_ENV==='production'
+        secure: process.env.NODE_ENV === 'production',
+        sameSite:'strict',
+        maxAge: 5*24*60*60*1000
     })
 
     res.status(200).json({
-        status:"success"
+                status:"success",
+            accessToken,
+            user:{
+                id: user._id,
+                name:user.username,
+                email:user.email,
+                role:user.role
+            }
     })
-}
-
-exports.protect=catchAsync( async (req,res,next)=>{
-
- let token
- if(req.headers.authorization && token.headers.authorization.startswith('Bearer')){
-    token=req.headers.authorization.splits('')[1]
- }
- if(req.cookie.jwt){
-    token=req.cookie.jwt
- }
-
- if(!token){
-    return next(new AppError('please login to gain access',400))
- }
-
- const decoded= await promisify(jwt.verify(token,process.env.JWT_SECRET))
-
-const currentUser= await User.findById(decoded.id)
-
-if(!currentUser){
-    return next(new AppError('user belonging to this token does not exist',400))
-}
-
- req.user=currentUser
- res.locals.user= currentUser
- next()
-
 })
 
+exports.refreshToken=catchAsync(async(req,res,next)=>{
+    const {refreshToken}=req.cookie
+
+    if(!refreshToken){
+        return next(new AppError('No refresh token found',401))
+    }
+ 
+    //verify refreshToken
+    const decoded= verifyRefreshToken(refreshToken)
+
+    if(!decoded){
+        return next(new AppError('invalid token',401))
+    }
+
+    const storedToken= await RefreshToken.findOne({token:refreshToken})
+    
+    if(!storedToken || !storedToken.isActive){
+        return next(new AppError('token has already expired',401))
+    }
+
+    const newAccessToken= generateAccessToken(decoded.userId)
+
+    res.status(200).json({
+        status:'success',
+        accessToken:newAccessToken
+    })
+      
+})
+
+
+exports.logout=catchAsync(async(req,res,next)=>{
+  const {refreshToken}= req.cookie
+
+  //revoke refreshToken
+  if(refreshToken){
+     await revokeRefreshToken(refreshToken,getIpAddress(req))
+  }
+
+  //clear cookie
+  res.clearCookie('refreshToken')
+
+    res.status(200).json({
+        status:"success",
+        message: "refresh token has been cleared succesfully"
+    })
+})
+
+
 exports.restrict=(...roles)=>{
-    return(req,res,next)=>{
+    return(req,next)=>{
     if(!roles.includes[req.user.role]){
       return next(new AppError("you do not have permission to access this route",400))
     }
