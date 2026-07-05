@@ -23,14 +23,17 @@ const registerSchema=Joi.object({
     .messages({
         'string.min' :'çharacters cannot be less than 6',
         'any.required' : 'password is required'
+    }),
+    passwordConfirm: Joi.string()
+    .valid(Joi.ref('password'))
+    .required()
+    .messages({
+        'any.only':'passwords do not match'
     })
 })
 
 const loginSchema= Joi.object({
-    email:Joi
-    .string()
-    .email()
-    .required(),
+    username:Joi.required(),
 
     password:Joi.string()
     .required()

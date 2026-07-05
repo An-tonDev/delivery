@@ -8,7 +8,7 @@ const validate=(schema)=>{
         if(error){
             const errors=error.details.map(detail=>detail.message)
 
-            return res.statusCode(400).json({
+            return res.status(400).json({
                 status:"fail",
                 message: "validation error",
                 errors:errors

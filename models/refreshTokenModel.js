@@ -1,4 +1,3 @@
-const { string, required } = require('joi')
 const mongoose=require('mongoose')
 
 const refreshTokenSchema= new mongoose.Schema({
@@ -21,7 +20,6 @@ const refreshTokenSchema= new mongoose.Schema({
     },
     revokedAt:{
         type: Date,
-        required:true
     },
     revokedByIp:{
       type:String

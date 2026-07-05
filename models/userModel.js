@@ -28,16 +28,6 @@ const userSchema= new mongoose.Schema(
         maxlength:[20,"password should not be more than 20 characters "],
         select:false
     },
-    passwordConfirm:{
-       type:String,
-       required:[true,"please confirm your password"],
-       validate:{
-         validator: function(el){
-            return el === this.password
-         },
-         message:"passwords do not match"
-       }
-    },
      role:{
        type:String,
        enum:["user","admin","rider"],
@@ -89,7 +79,7 @@ userSchema.index({location:'2dsphere'},
 
 userSchema.pre('save',async function(next){
   if(!this.isModified('password')) return next()
-  this.password= bcrypt.hash(this.password,12)
+  this.password= await bcrypt.hash(this.password,12)
   this.passwordConfirm=undefined
   next()
 })

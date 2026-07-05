@@ -58,13 +58,13 @@ exports.deleteOrder=catchAsync (async(req,res,next)=>{
 })
 
 exports.createOrder = catchAsync(async(req, res, next) => {
-    const { senderLocation,dropoffCoords,totalPrice, ...orderData } = req.body;
+    const { senderLocation,dropoffLocation,totalPrice, ...orderData } = req.body;
     
     if (!senderLocation || !senderLocation.coordinates) {
         return next(new AppError('Sender location is required', 400));
     }
-    if (!dropoffCoords) {
-        return next(new AppError('Sender location is required', 400));
+    if (!dropoffLocation) {
+        return next(new AppError('drop off location is required', 400));
     }
       
     if(!totalPrice){
@@ -76,17 +76,19 @@ exports.createOrder = catchAsync(async(req, res, next) => {
       senderLocation,
       dropoffLocation:{
         type:'Point',
-        coordinates:[dropoffCoords.lng,dropoffCoords.lat]
+        coordinates:[dropoffLocation.lng,dropoffLocation.lat]
       },
       totalPrice,
       status: 'pending'
     });
+
     const paymentReference=`order_${order._id}_${Date.now()}`
     order.paymentReference=paymentReference
+
     await order.save()
 
     const paystackResponse= await paystack.post('/transaction/initialize/',{
-      email: orderData.email,
+      email: req.user.email,
       amount: totalPrice*100,
       reference: paymentReference,
       callback_url:'http://localhost:5500/public/success.html'

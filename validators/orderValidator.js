@@ -12,12 +12,12 @@ const orderSchema= Joi.object({
    destination: Joi.string()
    .min(5)
    .required()
-   .message({
+   .messages({
     'any.required':'the order destination is required'
 }),
 
    recipientPhoneNo: Joi.string()
-   .pattern(/^[0-9]{10-11}$/)
+   .pattern(/^[0-9]{10,11}$/)
    .required()
    .messages({
     'string.pattern.base':"phone number should contain 10-11 digits",
@@ -38,11 +38,17 @@ const orderSchema= Joi.object({
     .required(),
 
     senderLocation: Joi.object({
-      type: Joi.string().valid('Point').required(),
-      coordinates: Joi.array().length(2).items(Joi.number()).required()
+      type: Joi
+      .string()
+      .valid('Point')
+      .required(),
+      coordinates: Joi
+      .array()
+      .length(2)
+      .items(Joi.number()).required()
     }),
 
-    dropoffCoords: Joi.object({
+    dropoffLocation: Joi.object({
       type: Joi.string()
       .valid('Point')
       .required(),

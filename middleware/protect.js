@@ -10,11 +10,8 @@ const protect=catchAsync( async (req,res,next)=>{
 
  //get token from header
 
- if(req.headers.authorization && token.headers.authorization.startswith('Bearer')){
-    token=req.headers.authorization.splits('')[1]
- }
- if(req.cookie.jwt){
-    token=req.cookie.jwt
+ if(req.headers.authorization && req.headers.authorization.startsWith('Bearer')){
+    token=req.headers.authorization.split(' ')[1]
  }
 
  if(!token){
@@ -24,12 +21,13 @@ const protect=catchAsync( async (req,res,next)=>{
  //verify token
  const decoded= verifyAccessToken(token)
 
+
  //check if the token is valid
  if(!decoded){
     return next(new AppError("invalid or expired token, please log in again",401))
  }
 
-const currentUser= await User.findById(decoded.id)
+const currentUser= await User.findById(decoded.userId)
 
 //check if user exists
 if(!currentUser){

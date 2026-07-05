@@ -19,6 +19,7 @@ const verifyAccessToken= (token) =>{
     try{
        return JWT.verify(token,process.env.JWT_ACCESS_SECRET)
     }catch(error){
+        console.log(error)
         return null
     }
 }
@@ -34,7 +35,7 @@ const saveRefreshToken= async (token,userId,ipAddress) =>{
     const expiresAt= new Date(Date.now()+5*24*60*60*1000)
     await RefreshToken.create({
          token,
-         userId,
+         user:userId,
          expiresAt,
          createdByIP:ipAddress
     })

@@ -1,12 +1,10 @@
-const jwt=require('jsonwebtoken')
 const catchAsync= require('../utils/catchAsync')
 const RefreshToken=require('../models/refreshTokenModel')
 const User=require('../models/userModel')
 const {AppError, NotFoundError}=require('../utils/appError')
 const crypto=require('crypto')
 const Email=require('../utils/email')
-const { generateAccessToken,generateRefreshToken,
-               verifyAccessToken,verifyRefreshToken,
+const { generateAccessToken,generateRefreshToken,verifyRefreshToken,
                saveRefreshToken,revokeRefreshToken}=require('../utils/tokenUtils')
 
 /* const signToken= id =>{
@@ -88,10 +86,16 @@ exports.login= catchAsync( async(req,res,next)=>{
        return next(new AppError("please provide your username or password",400))
     }
 
-    const user= await User.findOne(username).select('+password')
-    if(!user || user.correctPassword(password,user.password)){
-       return next(new AppError("incorrect email or password",401))
-    }
+ const user = await User.findOne({ username }).select('+password');
+
+if (!user) {
+    return next(new AppError('incorrect username or password', 401));
+}
+const isCorrect = await user.correctPassword(password, user.password);
+
+if (!isCorrect) {
+    return next(new AppError('incorrect username or password', 401));
+}
 
     const accessToken=generateAccessToken(user._id)
     const refreshToken=generateRefreshToken(user._id)
@@ -118,7 +122,7 @@ exports.login= catchAsync( async(req,res,next)=>{
 })
 
 exports.refreshToken=catchAsync(async(req,res,next)=>{
-    const {refreshToken}=req.cookie
+    const {refreshToken}=req.cookies
 
     if(!refreshToken){
         return next(new AppError('No refresh token found',401))
@@ -136,8 +140,20 @@ exports.refreshToken=catchAsync(async(req,res,next)=>{
     if(!storedToken || !storedToken.isActive){
         return next(new AppError('token has already expired',401))
     }
+       //refresh token rotation
+      await revokeRefreshToken(refreshToken)
 
     const newAccessToken= generateAccessToken(decoded.userId)
+    const newRefreshToken=generateRefreshToken(decoded.userId)
+
+    await saveRefreshToken(newRefreshToken,decoded.userId,getIpAddress(req))
+
+    res.cookie('refreshToken',newRefreshToken,{
+        httpOnly:true,
+        secure: process.env.NODE_ENV== 'production',
+        sameSite:'strict',
+        maxAge: 5*24*60*60*1000
+    })
 
     res.status(200).json({
         status:'success',
@@ -148,7 +164,7 @@ exports.refreshToken=catchAsync(async(req,res,next)=>{
 
 
 exports.logout=catchAsync(async(req,res,next)=>{
-  const {refreshToken}= req.cookie
+  const {refreshToken}= req.cookies
 
   //revoke refreshToken
   if(refreshToken){

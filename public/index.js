@@ -9,7 +9,7 @@ let customerMarker=null
 let destinationMarker=null
 let riderMarker=null
 let calculatedPrice = null;
-let dropoffCoords = null;
+let dropoffLocation = null;
 let orderData = null;
 
 const socket= io('http://localhost:32000')
@@ -49,7 +49,6 @@ socket.on('delivery_success', (data) => {
       
      if((pendingOrderId || urlReference) && !deliveryInProgress){
         const referenceToCheck= urlReference || paymentReference
-        console.log(referenceToCheck)
         showMessage("checking payment status...")
         localStorage.setItem('deliveryStarted','true')
 
@@ -368,7 +367,7 @@ const submitOrder=document.getElementById('submitOrder')
                    }
 
                    calculatedPrice=priceResult.data.totalPrice
-                   dropoffCoords=priceResult.data.dropoffCoords
+                   dropoffLocation=priceResult.data.dropoffLocation
 
                    document.getElementById('distanceText').textContent= priceResult.data.distanceInKm;
                    document.getElementById('priceText').textContent= calculatedPrice.toLocaleString('en-NG',{
@@ -409,7 +408,7 @@ const submitOrder=document.getElementById('submitOrder')
                             customerLocation[0]
                         ]
                     },
-                    dropoffCoords,
+                    dropoffLocation,
                     totalPrice: calculatedPrice,
                     ...orderData
                 };
