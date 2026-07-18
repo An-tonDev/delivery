@@ -9,7 +9,6 @@ const showAlert=(message,type)=>{
     alertBox.style.display='block'
 }
 
-//gogogoggogoggog
 
 const showFieldError=(fieldId,errorId,show)=>{
     const field= document.getElementById(fieldId)
