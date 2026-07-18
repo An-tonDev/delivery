@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kia Kia — Log In</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="stylesheet" href="css/auth.css"/>
+</head>
+<body>
+
+  <div class="auth-wrapper">
+    <div class="auth-card">
+
+      <div class="auth-logo">Kia<span>Kia</span></div>
+      <h2>Welcome back</h2>
+      <p class="subtitle">Log in to continue delivering.</p>
+
+      <div class="alert" id="alert"></div>
+
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="username">Username</label>
+          <input type="text" id="username" placeholder="Your username" autocomplete="off"/>
+          <div class="error-msg" id="username-error">Username is required</div>
+        </div>
+
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Your password"/>
+          <div class="error-msg" id="password-error">Password is required</div>
+        </div>
+
+        <div class="forgot-link">
+          <a href="#">Forgot password?</a>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Log in</button>
+      </form>
+
+      <div class="auth-switch">
+        Don't have an account? <a href="signup.html">Sign up</a>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="js/login.js"></script>
+
+</body>
+</html>

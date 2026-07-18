@@ -1,50 +1,114 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-     <link rel="stylesheet" href="index.css">
-     
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kia Kia — Fast Delivery</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
-    <div class="form-container">
-        <h2> Create Delivery Order</h2>
-        
-  <div id="orderForm" style="display:none;">
-            <h3>Delivery Details</h3>
-            
-            <label>Order name:</label>
-            <input type="text" id="orderName" placeholder="Who's receiving?">
 
-            <label>Email:</label>
-            <input type="email" id="email" placeholder="your email">
-            
-            <label>Recipient Phone:</label>
-            <input type="tel" id="recipientPhone" placeholder="Phone number">
-            
-            <label>Destination :</label>
-            <textarea id="deliveryAddress" placeholder="Delivery address in full"></textarea>
-            
-            <label>Transport PIN (4 digits):</label>
-            <input type="password" id="pickupPin" maxlength="4" placeholder="four digits PIN">
+  <!-- NAVBAR -->
+  <nav>
+    <div class="logo">Kia<span>Kia</span></div>
+    <div class="nav-links">
+      <a href="login.html" class="btn-outline">Log in</a>
+      <a href="signup.html" class="btn-primary">Sign up</a>
+    </div>
+  </nav>
 
-            <button id="submitOrder">Request Delivery</button>
-        </div>
-     <div>
-    <button id="placeOrder">Place Delivery Order</button> 
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-badge">Lagos Fastest Delivery</div>
+      <h1>Delivered<br><span class="accent">Kia Kia.</span><br>No stories.</h1>
+      <p>Send anything across Lagos in minutes. Track your rider live, pay securely, and relax — we move fast so you don't have to.</p>
+      <div class="hero-cta">
+        <a href="signup.html" class="btn-big">Send a package →</a>
+        <a href="login.html" class="btn-ghost">I have an account</a>
+      </div>
     </div>
-        
-    <div id="priceDisplay" style="display:none">
-        <h3>Delivery Summary</h3>
-        <p>Distance: <span id="distanceText"></span> km</p>
-        <p>Price: ₦<span id="priceText"></span></p>/
-        <button id="confirmPayment">Pay Now</button>
-        <button id="cancelOrder">Cancel</button>
+
+    <div class="hero-stats">
+      <div class="stat-card">
+        <div class="number">15<span style="font-size:1.2rem">min</span></div>
+        <div class="label">Average delivery</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">24/7</div>
+        <div class="label">Always available</div>
+      </div>
+      <div class="stat-card">
+        <div class="number">100%</div>
+        <div class="label">Secure payments</div>
+      </div>
     </div>
-    <div id="locationStatus"></div>
-    
-     <script src="http://localhost:32000/socket.io/socket.io.js"></script>
-    <script src="./index.js"></script>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section class="how">
+    <div class="section-label">How it works</div>
+    <h2 class="section-title">Three steps, zero stress</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-icon">📦</div>
+        <h3>Place your order</h3>
+        <p>Enter pickup location, destination, and package details. Get an instant price quote.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">🏍️</div>
+        <h3>Rider picks up</h3>
+        <p>A verified rider near you accepts the order and picks up your package immediately.</p>
+      </div>
+      <div class="step">
+        <div class="step-icon">✅</div>
+        <h3>Fast delivery</h3>
+        <p>Track your rider live on the map. Your package arrives — kia kia.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- WHY KIA KIA -->
+  <section class="why">
+    <div class="section-label" style="color:var(--orange)">Why Kia Kia</div>
+    <h2 class="section-title">Built for Lagos. Built for speed.</h2>
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">📍</div>
+        <h4>Live tracking</h4>
+        <p>Watch your rider move in real time from pickup to your door.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🔒</div>
+        <h4>Secure payments</h4>
+        <p>Pay safely with Paystack. Your money is protected until delivery.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">⚡</div>
+        <h4>Lightning fast</h4>
+        <p>Most deliveries completed within 15 minutes across Lagos.</p>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🛡️</div>
+        <h4>PIN protected</h4>
+        <p>Your package is only released with your unique delivery PIN.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA BANNER -->
+  <section class="cta-banner">
+    <h2>Ready to send something?</h2>
+    <p>Join thousands of Lagos residents who deliver with Kia Kia every day.</p>
+    <a href="signup.html" class="btn-white">Get started free</a>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="logo">Kia<span>Kia</span></div>
+    <p>© 2025 KiaKia Delivery. Lagos, Nigeria.</p>
+  </footer>
+
 </body>
 </html>

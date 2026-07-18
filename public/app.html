@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+     <link rel="stylesheet" href="index.css">
+     
+</head>
+<body>
+    <div class="form-container">
+        <h2> Create Delivery Order</h2>
+        
+  <div id="orderForm" style="display:none;">
+            <h3>Delivery Details</h3>
+            
+            <label>Order name:</label>
+            <input type="text" id="orderName" placeholder="Who's receiving?">
+
+            <label>Email:</label>
+            <input type="email" id="email" placeholder="your email">
+            
+            <label>Recipient Phone:</label>
+            <input type="tel" id="recipientPhone" placeholder="Phone number">
+            
+            <label>Destination :</label>
+            <textarea id="deliveryAddress" placeholder="Delivery address in full"></textarea>
+            
+            <label>Transport PIN (4 digits):</label>
+            <input type="password" id="pickupPin" maxlength="4" placeholder="four digits PIN">
+
+            <button id="submitOrder">Request Delivery</button>
+        </div>
+     <div>
+    <button id="placeOrder">Place Delivery Order</button> 
+    </div>
+        
+    <div id="priceDisplay" style="display:none">
+        <h3>Delivery Summary</h3>
+        <p>Distance: <span id="distanceText"></span> km</p>
+        <p>Price: ₦<span id="priceText"></span></p>/
+        <button id="confirmPayment">Pay Now</button>
+        <button id="cancelOrder">Cancel</button>
+    </div>
+    <div id="locationStatus"></div>
+    
+     <script src="http://localhost:32000/socket.io/socket.io.js"></script>
+    <script src="./index.js"></script>
+</body>
+</html>

@@ -4,7 +4,6 @@ const {AppError,NotFoundError}=require('../utils/appError')
 const ApiFeatures=require('../utils/apiFeatures')
 const paystack= require('../utils/paystack')
 
-
 exports.getOrders=catchAsync (async(req,res,next)=>{
      console.log("query params",req.query)
     const features=new ApiFeatures(Order.find(),req.query)
@@ -104,7 +103,6 @@ exports.createOrder = catchAsync(async(req, res, next) => {
 
 });
 
-
 exports.calculateDeliveryPrice = catchAsync (async (req, res, next) => {
     const { pickupCoords,dropoffAddress } = req.body;
 
@@ -119,7 +117,7 @@ exports.calculateDeliveryPrice = catchAsync (async (req, res, next) => {
 
     const data = await response.json();
     if (!data.length) {
-      res.status(200).json({
+       return res.status(200).json({
         status:'fallback',
         message:'destination not found redirecting to lagos center',
         data:{

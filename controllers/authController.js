@@ -7,30 +7,25 @@ const Email=require('../utils/email')
 const { generateAccessToken,generateRefreshToken,verifyRefreshToken,
                saveRefreshToken,revokeRefreshToken}=require('../utils/tokenUtils')
 
-/* const signToken= id =>{
-    return jwt.sign({id},process.env.JWT_SECRET,{
-        expiresIn: process.env.JWTEXPIRESIN
-    })
-}
 
-const createSendToken= (user,statusCode,res)=>{
-    const token=signToken(user._id)
- 
-    res.cookie('jwt',token,{
-        expires: new Date(Date.now()+process.env.JWT_COOKIE_EXPIRES_IN*60*60*24*1000),
+const createSendTokens= async(user,statusCode,req,res)=>{
+    const accessToken= generateAccessToken(user._id,)
+    const refreshToken= generateRefreshToken(user._id)
+
+    await saveRefreshToken(refreshToken,user._id,getIpAddress(req))
+
+    res.cookie('refreshToken',refreshToken,{
         httpOnly:true,
-        secure: process.env.NODE_ENV === 'production'
+        secure: process.env.NODE_ENV=='production',
+        sameSite:'strict',
+        maxAge: 5*24*6060*1000  
     })
 
-    password=undefined
-
-    res.status(statusCode).json({
-        status:"success",
-        token,
-        data:{user}
-    })
+ res.status(statusCode).json({
+    status:"success",
+    accessToken
+   })
 }
- */
 
 const getIpAddress= (req) =>{
     return req.ip || req.remote.connection
@@ -54,28 +49,7 @@ exports.signup=catchAsync(async(req,res,next)=>{
         role: role
     })
 
-    const accessToken= generateAccessToken(user._id)
-    const refreshToken=generateRefreshToken(user._id)
-
-    await saveRefreshToken(refreshToken,user._id,getIpAddress(req))
-
-    res.cookie('refreshToken',refreshToken,{
-        httpOnly:true,
-        secure: process.env.NODE_ENV==='production',
-        sameSite:'strict',
-        maxAge:5*24*60*60*1000
-    })
-
-     res.status(200).json({
-        status:"success",
-        accessToken,
-        user:{
-            id: user._id,
-            name:user.username,
-            email:user.email,
-            role:user.role
-        }
-     })
+    createSendTokens(user,201,req,res)
 })
 
 exports.login= catchAsync( async(req,res,next)=>{
@@ -97,28 +71,7 @@ if (!isCorrect) {
     return next(new AppError('incorrect username or password', 401));
 }
 
-    const accessToken=generateAccessToken(user._id)
-    const refreshToken=generateRefreshToken(user._id)
-
-    await saveRefreshToken(refreshToken,user._id,getIpAddress(req))
-
-    res.cookie('refreshToken',refreshToken,{
-        httpOnly:true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite:'strict',
-        maxAge: 5*24*60*60*1000
-    })
-
-    res.status(200).json({
-                status:"success",
-            accessToken,
-            user:{
-                id: user._id,
-                name:user.username,
-                email:user.email,
-                role:user.role
-            }
-    })
+    createSendTokens(user,200,req,res)
 })
 
 exports.refreshToken=catchAsync(async(req,res,next)=>{
@@ -163,7 +116,7 @@ exports.refreshToken=catchAsync(async(req,res,next)=>{
 })
 
 
-exports.logout=catchAsync(async(req,res,next)=>{
+exports.logout=catchAsync(async(req,res)=>{
   const {refreshToken}= req.cookies
 
   //revoke refreshToken
@@ -183,56 +136,64 @@ exports.logout=catchAsync(async(req,res,next)=>{
 
 exports.restrict=(...roles)=>{
     return(req,next)=>{
-    if(!roles.includes[req.user.role]){
+    if(!roles.includes(req.user.role)){
       return next(new AppError("you do not have permission to access this route",400))
     }
     next()
 }    
 }
 
-exports.resetPassword= catchAsync(async(req,res)=>{
+exports.resetPassword= catchAsync(async(req,res,next)=>{
     const hashedToken= crypto.createHash('sha256')
     .update(req.params.token)
     .digest('hex')
-
+    
     const user= await User.findOne({
         passwordResetToken:hashedToken,
         passwordResetExpires: {$gt:Date.now()}
     })
-
+   
     if(!user){
-       return next(new AppError("token is invalid or expired"))
+       return next(new AppError("token is invalid or expired",400))
     }
-      
-    req.body.password=user.password
-    req.body.paasswordConfirm=user.passwordConfirm
+      if(!req.body.password==req.body.passwordConfirm){
+        return next(new AppError("passwords do not match",400))
+      }
+
+     user.password=req.body.password
      user.passwordResetToken=undefined
      user.passwordResetExpires=undefined
 
-     await user.save()
-     createSendToken(user,200,res)
-})
+        await user.save()
+       createSendTokens(user,200,req,res)
+    })
 
 exports.forgotPassword=catchAsync( async (req,res,next)=>{
-    const user= await User.findOne(req.body.email)
+
+    const user= await User.findOne({email:req.body.email})
     if(!user){
        return next(new NotFoundError("user with this email "))
     }
-
-    const resetToken= user.sendResetToken()
+    const resetToken= await user.sendResetToken()
     await user.save({validateBeforeSave:false})
        try{
            resetUrl=`${req.protocol}://
-           ${req.get('host')}//api/v1/user/resetPassword/${resetToken}`
-           await new Email(user,resetUrl).sendPasswordReset()
+           ${req.get('host')}/api/v1/user/resetPassword/${resetToken}`
+           await new Email(user,resetUrl).sendPasswordReset(resetToken)
+           res.status(200).json({
+            status:"success",
+           message:"token sent to mail"
+       })
        }catch(err){
-
+           console.log("EMAIL",err)
            user.passwordResetExpires=undefined
            user.passwordResetToken=undefined
            await user.save({validateBeforeSave:false})
 
          return next (new AppError('email could not be sent',500))
        }
+
+       
 })
 
 exports.updatePassword= catchAsync(async(req,res,next)=>{
@@ -244,7 +205,7 @@ exports.updatePassword= catchAsync(async(req,res,next)=>{
     if(!(await user.correctPassword(passwordCurrent,user.password))){
        return next(new AppError('cuurent password is not correct',400))
     }
-     if(!newPassword && newPassword.length<5){
+     if(!newPassword || newPassword.length<5){
        return next(new AppError('password must be more than 5 characters',400))
      }
 
@@ -255,5 +216,5 @@ exports.updatePassword= catchAsync(async(req,res,next)=>{
      user.password=newPassword
      user.passwordConfirm=newPassword
      await user.save()
-     createSendToken(user,200,res)
-})
+      createSendTokens(user,200,req,res)
+    })  
