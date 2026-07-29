@@ -41,7 +41,6 @@ refreshTokenSchema.virtual('isActive').get(function(){
 })
 
 
-
 const RefreshToken=mongoose.model('RefreshToken', refreshTokenSchema)
 
 module.exports=RefreshToken

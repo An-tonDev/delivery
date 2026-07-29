@@ -8,7 +8,7 @@ const { generateAccessToken,generateRefreshToken,verifyRefreshToken,
                saveRefreshToken,revokeRefreshToken}=require('../utils/tokenUtils')
 
 
-const createSendTokens= async(user,statusCode,req,res)=>{
+const createSendTokens= catchAsync(async(user,statusCode,req,res)=>{
     const accessToken= generateAccessToken(user._id,)
     const refreshToken= generateRefreshToken(user._id)
 
@@ -18,14 +18,14 @@ const createSendTokens= async(user,statusCode,req,res)=>{
         httpOnly:true,
         secure: process.env.NODE_ENV=='production',
         sameSite:'strict',
-        maxAge: 5*24*6060*1000  
+        maxAge: 5*24*60*60*1000  
     })
 
  res.status(statusCode).json({
     status:"success",
     accessToken
    })
-}
+})
 
 const getIpAddress= (req) =>{
     return req.ip || req.remote.connection
@@ -65,6 +65,7 @@ exports.login= catchAsync( async(req,res,next)=>{
 if (!user) {
     return next(new AppError('incorrect username or password', 401));
 }
+
 const isCorrect = await user.correctPassword(password, user.password);
 
 if (!isCorrect) {
@@ -171,11 +172,15 @@ exports.resetPassword= catchAsync(async(req,res,next)=>{
 exports.forgotPassword=catchAsync( async (req,res,next)=>{
 
     const user= await User.findOne({email:req.body.email})
+
     if(!user){
        return next(new NotFoundError("user with this email "))
     }
+
     const resetToken= await user.sendResetToken()
+
     await user.save({validateBeforeSave:false})
+
        try{
            resetUrl=`${req.protocol}://
            ${req.get('host')}/api/v1/user/resetPassword/${resetToken}`
@@ -214,7 +219,7 @@ exports.updatePassword= catchAsync(async(req,res,next)=>{
      }
 
      user.password=newPassword
-     user.passwordConfirm=newPassword
+     
      await user.save()
       createSendTokens(user,200,req,res)
     })  

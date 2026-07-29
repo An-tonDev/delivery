@@ -27,6 +27,7 @@ const verifyRefreshToken= (token) =>{
     try{
        return JWT.verify(token,process.env.JWT_REFRESH_SECRET)
     }catch(error){
+        console.log(error)
         return null
     }
 }

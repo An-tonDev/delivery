@@ -5,7 +5,7 @@ class Email {
     this.to = user.email;
     this.name = user.username;
     this.url = url;
-    this.from = `Delivery App <${process.env.EMAIL_FROM}>`;
+    this.from = `Kia Kia <${process.env.EMAIL_FROM}>`;
   }
 
   newTransport() {
@@ -47,17 +47,17 @@ class Email {
       <h1>Welcome ${this.name}!</h1>
       <p>Your account has been successfully created.</p>
     `;
-    await this.sendEmail(message, "Welcome to Delivery App!");
+    await this.sendEmail(message, "Welcome to kia kia!");
   }
 
-  async sendPasswordReset(resetToken) {
+  async sendPasswordReset() {
     const message = `
       <p>Hello ${this.name},</p>
       <p>You requested a password reset.</p>
       <p>Reset your password here: <a href="${this.url}">${this.url}</a></p>
       <p>This token expires in 10 minutes.</p>
     `;
-    await this.sendEmail(message, `Your password reset token ${resetToken} is valid for 10 mins`);
+    await this.sendEmail(message, `Password reset link`);
   }
 }
 
