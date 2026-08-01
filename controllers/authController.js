@@ -8,7 +8,7 @@ const { generateAccessToken,generateRefreshToken,verifyRefreshToken,
                saveRefreshToken,revokeRefreshToken}=require('../utils/tokenUtils')
 
 
-const createSendTokens= catchAsync(async(user,statusCode,req,res)=>{
+const createSendTokens= async(user,statusCode,req,res)=>{
     const accessToken= generateAccessToken(user._id,)
     const refreshToken= generateRefreshToken(user._id)
 
@@ -25,7 +25,7 @@ const createSendTokens= catchAsync(async(user,statusCode,req,res)=>{
     status:"success",
     accessToken
    })
-})
+}
 
 const getIpAddress= (req) =>{
     return req.ip || req.remote.connection
@@ -41,11 +41,14 @@ exports.signup=catchAsync(async(req,res,next)=>{
         return next(new AppError('user already exists',400))
     }
 
+     if(password !== passwordConfirm){
+    return next(new appError('passwords do not match',400))
+  }
+
     const user= await User.create({
         username,
         email,
         password,
-        passwordConfirm,
         role: role
     })
 
@@ -95,24 +98,9 @@ exports.refreshToken=catchAsync(async(req,res,next)=>{
         return next(new AppError('token has already expired',401))
     }
        //refresh token rotation
-      await revokeRefreshToken(refreshToken)
+      await revokeRefreshToken(refreshToken,getIpAddress(req))
 
-    const newAccessToken= generateAccessToken(decoded.userId)
-    const newRefreshToken=generateRefreshToken(decoded.userId)
-
-    await saveRefreshToken(newRefreshToken,decoded.userId,getIpAddress(req))
-
-    res.cookie('refreshToken',newRefreshToken,{
-        httpOnly:true,
-        secure: process.env.NODE_ENV== 'production',
-        sameSite:'strict',
-        maxAge: 5*24*60*60*1000
-    })
-
-    res.status(200).json({
-        status:'success',
-        accessToken:newAccessToken
-    })
+      createSendTokens(decoded,200,req,res)
       
 })
 
@@ -157,7 +145,7 @@ exports.resetPassword= catchAsync(async(req,res,next)=>{
     if(!user){
        return next(new AppError("token is invalid or expired",400))
     }
-      if(!req.body.password==req.body.passwordConfirm){
+      if(req.body.password !== req.body.passwordConfirm){
         return next(new AppError("passwords do not match",400))
       }
 
@@ -214,7 +202,7 @@ exports.updatePassword= catchAsync(async(req,res,next)=>{
        return next(new AppError('password must be more than 5 characters',400))
      }
 
-     if(passwordCurrent===newPassword){
+     if(passwordCurrent == newPassword){
        return next(new AppError('new password should not be the same as current password',400))
      }
 

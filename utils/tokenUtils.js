@@ -5,14 +5,14 @@ const { AppError } = require('./appError')
 
 
 const generateAccessToken= (userId) =>{
-    return JWT.sign({userId},
+    return JWT.sign({_id:userId},
          process.env.JWT_ACCESS_SECRET,
          {expiresIn: '10m'}
     )
 }
 
 const generateRefreshToken= (userId) =>{
-    return JWT.sign({userId},process.env.JWT_REFRESH_SECRET,{expiresIn:'5d'})
+    return JWT.sign({_id:userId},process.env.JWT_REFRESH_SECRET,{expiresIn:'5d'})
 }
 
 const verifyAccessToken= (token) =>{
