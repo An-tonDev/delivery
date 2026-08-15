@@ -27,7 +27,7 @@ const protect=catchAsync( async (req,res,next)=>{
     return next(new AppError("invalid or expired token, please log in again",401))
  }
 
-const currentUser= await User.findById(decoded.userId)
+const currentUser= await User.findById(decoded._id)
 
 //check if user exists
 if(!currentUser){

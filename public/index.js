@@ -319,7 +319,7 @@ const submitOrder=document.getElementById('submitOrder')
         transportPIN: document.getElementById('pickupPin').value,
     };
 
-    const requiredFields = [ 'destination','name', 'recipientPhoneNo', 'transportPIN'];
+    const requiredFields = [ 'destination','email','name', 'recipientPhoneNo', 'transportPIN'];
     const hasEmptyField = requiredFields.some(field => !orderData[field]);
 
     if (hasEmptyField) {
@@ -367,7 +367,7 @@ const submitOrder=document.getElementById('submitOrder')
                    }
 
                    calculatedPrice=priceResult.data.totalPrice
-                   dropoffLocation=priceResult.data.dropoffLocation
+                   dropoffLocation=priceResult.data.dropoffCoords
 
                    document.getElementById('distanceText').textContent= priceResult.data.distanceInKm;
                    document.getElementById('priceText').textContent= calculatedPrice.toLocaleString('en-NG',{

@@ -25,7 +25,7 @@ exports.paystackWebhooks= async(req,res)=>{
         return res.sendStatus(200)
       }
 
-      if( Math.abs(amount-order.totalPrice)>1){
+      if( Math.abs(amount-order.totalPrice)>=1){
           console.log("payment mismatch")
           return res.sendStatus(200)
         }
@@ -64,7 +64,7 @@ exports.paystackWebhooks= async(req,res)=>{
 
         global.io.to(`order_${order._id}`).emit('order_assigned',{
             orderId: order._id,
-            riderid: rider._id
+            riderId: rider._id
          })
 
       }else{
